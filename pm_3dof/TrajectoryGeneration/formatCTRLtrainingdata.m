@@ -5,7 +5,10 @@ clc
 
 
 %% Setup Directory
-directory = '/orange/rcstudents/omkarmulekar/DistributionShiftStudy/pointmass_3dof/trainingdata/';
+storagedir = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/';
+formulation = 'pm_3dof';
+directory = [storagedir,formulation,'/Trajectories/'];
+
 addpath(directory);
 datadir = dir(directory);
 filenames = {datadir.name};
@@ -84,7 +87,7 @@ disp(['Full dataset size: ',num2str(count-1)])
 %% Separate into training and testing data
 disp('Separating training and testing data')
 
-num2train = 1400000;
+num2train = 5000000;
 Xtrain2 = Xfull_2(1:num2train,:);
 ttrain2 = tfull_2(1:num2train,:);
 Xtest2 = Xfull_2(num2train+1:end,:);
@@ -96,6 +99,6 @@ disp('Done separating')
 %% Save data to .mat file
 disp('Saving data to mat file')
 
-save('/orange/rcstudents/omkarmulekar/DistributionShiftStudy/pointmass_3dof/ANN2_data.mat','Xfull_2','tfull_2','Xtrain2','ttrain2','Xtest2','ttest2','times_train','times_test','times');
+save([storagedir,formulation,'/','ANN2_data.mat'],'Xfull_2','tfull_2','Xtrain2','ttrain2','Xtest2','ttest2','times_train','times_test','times');
 
 disp('Saved')

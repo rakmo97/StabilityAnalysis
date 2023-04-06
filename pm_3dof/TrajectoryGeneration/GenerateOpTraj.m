@@ -39,10 +39,10 @@ stateFinal = zeros(nTrajs,6);
 for i = 1:nTrajs
  
     % Solve OCP
-    % whilecount = 0;
-    % err_count = 0;
-    % while whilecount == err_count
-    %     try   
+    whilecount = 0;
+    err_count = 0;
+    while whilecount == err_count
+        try   
     
 
             %% parameters
@@ -72,7 +72,6 @@ for i = 1:nTrajs
 
             % Generate Initial Conditions and Target [x,y,phi,dx,dy,dphi,m]
             r = lower+(upper-lower).*rand(7,1);
-            r = [5,5,20,0,0,0]';
 
             % Set Initial Conditions
             solver.setInitialBounds( 'x'   ,   r(1)   );
@@ -211,12 +210,12 @@ for i = 1:nTrajs
                 saveas(gcf,'OCL_pos.png')
             end
            
-    %     catch
-    %         disp('Optimal Solution Not Found, Retrying...');
-    %         err_count = err_count+1;
-    %     end
-    %     whilecount = whilecount+1;
-    % end
+        catch
+            disp('Optimal Solution Not Found, Retrying...');
+            err_count = err_count+1;
+        end
+        whilecount = whilecount+1;
+    end
 
 
     disp(['Finished trajectory ',num2str(i),' of ',num2str(nTrajs)])
