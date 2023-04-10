@@ -45,28 +45,28 @@ def train_step(x, y):
         y_pred = TF(x, training=True)
         y_pred = tf.cast(y_pred, dtype=tf.float64)
 
-        # print("y_pred: {}".format(y_pred))
-        print("x: {}".format(x))
-        print("x[:,0]: {}".format(x[:,0]))
-        print("y: {}".format(y))
-        print("y_pred: {}".format(y_pred))
-        print("y_pred[:,0]: {}".format(y_pred[:,0]))
-        print("g: {}".format(g))
+
 
         # Compute the loss value for this minibatch.
         mse = loss_fn(y, y_pred)
-        vdot = tf.reduce_mean(x[:,0]*x[:,3] + x[:,1]*x[:,4] + x[:,2]*x[:,5] + x[:,3]*y_pred[:,0] + x[:,4]*y_pred[:,1] + x[:,5]*(y_pred[:,2] - g))
-        print("mse: {}".format(mse))
-        print("vdot: {}".format(vdot))
+
         # loss_value = mse + vdot
         loss_value = mse
-        print("loss_value: {}".format(loss_value))
 
+
+    print("x: {}".format(x))
+    print("y: {}".format(y))
+    print("y_pred: {}".format(y_pred))
+    print("mse: {}".format(mse))
+    print("loss_value: {}".format(loss_value))
 
 
     # Use the gradient tape to automatically retrieve
     # the gradients of the trainable variables with respect to the loss.
     grads = tape.gradient(loss_value, TF.trainable_weights)
+    print("TF.trainable_weights: {}".format(TF.trainable_weights))
+    print("grads: {}".format(grads))
+    print("zip(grads, TF.trainable_weights): {}\n\n\n\n\n\n\n\n".format(zip(grads, TF.trainable_weights)))
 
     # Run one step of gradient descent by updating
     # the value of the variables to minimize the loss.
@@ -91,7 +91,8 @@ def test_step(x, y):
 # ==================================
 # Load in training and testing data
 print("Loading mat file")
-base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
+# base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
+base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
 saveflag = 'custom'
