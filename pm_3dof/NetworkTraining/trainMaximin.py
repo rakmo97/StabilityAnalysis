@@ -64,6 +64,7 @@ def min_step(x, y):
     # Calculate gradients wrt weights
     grads = tape.gradient(L_b, TF.trainable_weights)
 
+    
     #  Apply gradients
     opt_min.apply_gradients(zip(grads, TF.trainable_weights))
 
@@ -209,16 +210,17 @@ for epoch in range(epochs):
 
 
     # MAX STEP
-    for x_full_train, y_full_train in train_dataset_full_batch:
+    # for x_max_step, y_max_step in train_dataset_full_batch:
+    for step, (x_max_step, y_max_step) in enumerate(train_dataset):
 
         # Max step funciton
         # multiplier = max_step(x_full_train, y_full_train)
         # Forward Pass
-        y_pred = TF(x_full_train, training=True)
+        y_pred = TF(x_max_step, training=True)
         y_pred = tf.cast(y_pred, dtype=tf.float64)
     
         # Calculate gradients wrt multiplier (analytical form, not autodiff)
-        grads = [MeanVdot(x_full_train, y_pred)]
+        grads = [MeanVdot(x_max_step, y_pred)]
     
     
         #  Apply gradients
