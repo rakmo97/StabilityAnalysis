@@ -88,11 +88,11 @@ def test_step(x, y):
 # ==================================
 # Load in training and testing data
 print("Loading mat file")
-# base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
-base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
+base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
+# base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'custom'
+saveflag = 'smalltraining'
 
 Xfull = matfile['Xfull_2']
 tfull = matfile['tfull_2']
@@ -159,7 +159,7 @@ opt_max = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, a
 
 # Batch/early stopping parameters
 batch_size=100
-epochs = 10000
+epochs = 500
 patience = 25
 wait = 0
 best = float('inf')
@@ -340,7 +340,7 @@ yvis = TF.predict(X_test[idxs].reshape(-1,6));
 
 
 
-plt.figure(3)
+plt.figure(4)
 plt.subplot(311)
 plt.plot(t_test[idxs,0])
 plt.plot(yvis[:,0],'--')
