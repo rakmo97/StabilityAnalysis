@@ -93,7 +93,7 @@ base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'smalltraining'
+saveflag = 'fullmin_max1step_'
 
 Xfull = matfile['Xfull_2']
 tfull = matfile['tfull_2']
@@ -101,6 +101,8 @@ X_train = matfile['Xtrain2'].reshape(-1,6)
 t_train = matfile['ttrain2']
 X_test = matfile['Xtest2'].reshape(-1,6)
 t_test = matfile['ttest2']
+
+print("Full training size: {}".format(X_train.shape[0]))
 
 # Xfull = matfile['Xfull_2'].reshape(-1,7)
 # tfull = matfile['tfull_2'][:,2].reshape(-1,1)
@@ -160,7 +162,9 @@ opt_max = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, a
 
 # Batch/early stopping parameters
 batch_size=100
-epochs = 500
+epochs_min = 10000
+epochs_max = 1
+episodes = 10
 patience = 25
 wait = 0
 best = float('inf')
@@ -184,11 +188,12 @@ history = {'loss': [], 'acc': [], 'val_loss': [], 'val_acc': [], 'multiplier': [
 # Reserve 10,000 samples for validation.
 x_val = X_train[-10000:]
 y_val = t_train[-10000:]
-# x_train = X_train[:-10000]
-# y_train = t_train[:-10000]
+x_train = X_train[:-10000]
+y_train = t_train[:-10000]
 
-x_train = X_train[:-4500000]
-y_train = t_train[:-4500000]
+# x_train = X_train[:-4500000]
+# y_train = t_train[:-4500000]
+print("Utelized training size: {}".format(x_train.shape[0]))
 
 
 # Prepare the training dataset.
@@ -202,90 +207,97 @@ val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 val_dataset = val_dataset.batch(batch_size)
 
 # Lagrange multiplier
-multiplier = [tf.Variable(0.1, dtype=tf.float64)]
+multiplier = [tf.Variable(0.0001, dtype=tf.float64)]
 
-for epoch in range(epochs):
-    print("\nStart of epoch %d" % (epoch,))
-    start_time = time.time()
+for episode in range(episodes):
 
+    print("==============================")
+    print("==============================")
+    print("\nStart of episode {} of {}".format(episode,episodes))
 
-    # MAX STEP
-    # for x_max_step, y_max_step in train_dataset_full_batch:
-    for step, (x_max_step, y_max_step) in enumerate(train_dataset):
+    for epoch in range(epochs_min):
+        print("\nStart of epoch %d" % (epoch,))
+        start_time = time.time()
 
-        # Max step funciton
-        # multiplier = max_step(x_full_train, y_full_train)
-        # Forward Pass
-        y_pred = TF(x_max_step, training=True)
-        y_pred = tf.cast(y_pred, dtype=tf.float64)
+        # MIN STEP
+        for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
+            
+            # Min step function
+            loss_value = min_step(x_batch_train, y_batch_train)
+            
+            # Log every 200 batches.
+            # if step % 10000 == 0:
+            #     print(
+            #         "Training loss (for one batch) at step %d: %.4e"
+            #         % (step, float(loss_value))
+            #     )
+            #     print("Seen so far: %s samples" % ((step + 1) * batch_size))
+            
+        # Display metrics at the end of each epoch.
+        train_acc = train_acc_metric.result()
+        history['loss'].append(loss_value)
+        history['acc'].append(train_acc)
+
+        # Reset training metrics at the end of each epoch
+        # train_loss_metric.reset_states()
+        train_acc_metric.reset_states()
+
+        # Run a validation loop at the end of each epoch.
+        for x_batch_val, y_batch_val in val_dataset:
+            # TEST STEP FUNCTION
+            val_loss = test_step(x_batch_val, y_batch_val)
+
+        val_acc = val_acc_metric.result()
+        history['val_loss'].append(val_loss)
+        history['val_acc'].append(val_acc)
+
+        val_acc_metric.reset_states()
     
-        # Calculate gradients wrt multiplier (analytical form, not autodiff)
-        grads = [MeanVdot(x_max_step, y_pred)]
-    
-    
-        #  Apply gradients
-        opt_max.apply_gradients(zip(grads, multiplier))
 
+        # The early stopping strategy: stop the training if `val_loss` does not
+        # decrease over a certain number of epochs.
+        wait += 1
+        print("--- Epoch Summary ---")
+        print("Training Loss epoch (Lagrangian): %.4f" % (float(loss_value),))
+        print("Validation Loss epoch (Lagrangian): %.4f" % (float(val_loss),))
+        print("Training Metric epoch (MSE): %.4f" % (float(train_acc),))
+        print("Validation Metric (MSE))): %.4e" % (float(val_acc),))
+        print("Time taken: %.2fs" % (time.time() - start_time))
+        print("val_loss = {}".format(val_loss))
+        print("best = {}".format(best))
+        print("wait = {}".format(wait))
+        if val_loss < best:
+            print("Val loss: {} < best: {}, setting wait to 0".format(val_loss, best))
+            best = val_loss
+            wait = 0
+        if wait >= patience:
+            print("Early Stopping condition met, breaking")
+            break
+
+
+    for epoch in range(epochs_max):
+        # MAX STEP
+        for x_max_step, y_max_step in train_dataset_full_batch:
+        # for step, (x_max_step, y_max_step) in enumerate(train_dataset):
+
+            # Max step funciton
+            # multiplier = max_step(x_full_train, y_full_train)
+            # Forward Pass
+            y_pred = TF(x_max_step, training=True)
+            y_pred = tf.cast(y_pred, dtype=tf.float64)
         
+            # Calculate gradients wrt multiplier (analytical form, not autodiff)
+            grads = [MeanVdot(x_max_step, y_pred)]
+        
+        
+            #  Apply gradients
+            opt_max.apply_gradients(zip(grads, multiplier))
+
+
     
     multiplierTensor = tf.constant(multiplier[0])
     history['multiplier'].append(multiplierTensor)
-
-    # MIN STEP
-    for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
-        
-        # Min step function
-        loss_value = min_step(x_batch_train, y_batch_train)
-        
-        # Log every 200 batches.
-        # if step % 10000 == 0:
-        #     print(
-        #         "Training loss (for one batch) at step %d: %.4e"
-        #         % (step, float(loss_value))
-        #     )
-        #     print("Seen so far: %s samples" % ((step + 1) * batch_size))
-        
-    # Display metrics at the end of each epoch.
-    train_acc = train_acc_metric.result()
-    history['loss'].append(loss_value)
-    history['acc'].append(train_acc)
-
-    # Reset training metrics at the end of each epoch
-    # train_loss_metric.reset_states()
-    train_acc_metric.reset_states()
-
-    # Run a validation loop at the end of each epoch.
-    for x_batch_val, y_batch_val in val_dataset:
-        # TEST STEP FUNCTION
-        val_loss = test_step(x_batch_val, y_batch_val)
-
-    val_acc = val_acc_metric.result()
-    history['val_loss'].append(val_loss)
-    history['val_acc'].append(val_acc)
-
-    val_acc_metric.reset_states()
-   
     print("Multiplier Value: %.4f" % (float(multiplierTensor),))
-    print("Training Loss epoch (Lagrangian): %.4f" % (float(loss_value),))
-    print("Validation Loss epoch (Lagrangian): %.4f" % (float(val_loss),))
-    print("Training Metric epoch (MSE): %.4f" % (float(train_acc),))
-    print("Validation Metric (MSE))): %.4e" % (float(val_acc),))
-    print("Time taken: %.2fs" % (time.time() - start_time))
-
-    # The early stopping strategy: stop the training if `val_loss` does not
-    # decrease over a certain number of epochs.
-    wait += 1
-    print("============ EPOCH SUMMARY ============")
-    print("val_loss = {}".format(val_loss))
-    print("best = {}".format(best))
-    print("wait = {}".format(wait))
-    if val_loss < best:
-        print("Val loss: {} < best: {}, setting wait to 0".format(val_loss, best))
-        best = val_loss
-        wait = 0
-    if wait >= patience:
-        print("Early Stopping condition met, breaking")
-        break
 
 
 

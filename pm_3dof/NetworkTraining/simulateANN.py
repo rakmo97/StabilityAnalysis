@@ -31,7 +31,9 @@ matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
 print('Loading Policy')
 # filename = base_data_folder+formulation+'NetworkTraining/ANN2_703_tanh_n100.h5'
 # filename = base_data_folder+formulation+'NetworkTraining/ANN2_703_relu_n100.h5'
-filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
+# filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
+# filename = base_data_folder+formulation+'NetworkTraining/fullmin_max_ANN2_703_tanh_n100.h5'
+filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_ANN2_703_tanh_n100.h5'
 policy = models.load_model(filename)
 
 nState    =   6
@@ -53,6 +55,8 @@ u_ocl = matfile['ttest2'][starting_idx:starting_idx+100,:]
 times_ocl = matfile['times_test'][starting_idx:starting_idx+100,:]
 
 x0 = x_ocl[0,:]
+# x0 = np.array([ 3.03543613,  1.06680528, 14.64393279, -0.11026081, -0.4349514, 0.44100244])
+x0 = np.array([ 3.01573735,  1.0865911,  14.60939871,  0.89448794, -0.35239689,  0.93383165])
 y_policy = np.zeros([nt,nCtrl])
 x_policy = np.zeros([nt,nState])
 x_policy[0,:] = x0
