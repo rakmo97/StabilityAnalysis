@@ -93,7 +93,7 @@ base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'fullmin_max1step_'
+saveflag = 'fullmin_max1step_20episodes'
 
 Xfull = matfile['Xfull_2']
 tfull = matfile['tfull_2']
