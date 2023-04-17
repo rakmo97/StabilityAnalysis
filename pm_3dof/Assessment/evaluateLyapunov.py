@@ -5,6 +5,7 @@ import pickle
 import numpy as np
 from scipy import integrate
 import time
+import LanderDynamics as LD
 
 from matplotlib import pyplot as plt
 
@@ -16,7 +17,8 @@ formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
 # saveflag = 'customANN2'
 # saveflag = 'fullmin_max'
-saveflag = 'fullmin_max1step'
+# saveflag = 'fullmin_max1step'
+saveflag = 'fullmin_max1step_20episodes'
 
 
 Xfull = matfile['Xfull_2']
@@ -32,7 +34,8 @@ print('Loading Policy')
 # filename = base_data_folder+formulation+'NetworkTraining/ANN2_703_relu_n100.h5'
 # filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
 # filename = base_data_folder+formulation+'NetworkTraining/fullmin_max_ANN2_703_tanh_n100.h5'
-filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_ANN2_703_tanh_n100.h5'
+# filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_ANN2_703_tanh_n100.h5'
+filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_20episodesANN2_703_tanh_n100.h5'
 policy = models.load_model(filename)
 
 nState    =   6
@@ -40,13 +43,20 @@ nCtrl     =   3
 
 
 g = 9.81
-p_x = 10
-p_y = 10
-p_z = 1
+
+p_x  = 10
+p_y  = 10
+p_z  = 0.1
+p_vx = 1
+p_vy = 1
+p_vz = 0.1
+
+p_x  = 1
+p_y  = 1
+p_z  = 1
 p_vx = 1
 p_vy = 1
 p_vz = 1
-
 
 # X_test = X_test[:10000,:]
 X_test = X_test[:1000000,:]
@@ -56,6 +66,10 @@ Vdot = np.zeros(nTest)
 print('nTest: {}'.format(nTest))
 
 y_predicted = policy.predict(X_test)
+y_predicted[:,0] = np.clip(y_predicted[:,0], -20, 20)
+y_predicted[:,1] = np.clip(y_predicted[:,1], -20, 20)
+y_predicted[:,2] = np.clip(y_predicted[:,2],   0, 20)
+
 print('Predicted!')
 
 for i in range(nTest):
@@ -66,6 +80,9 @@ for i in range(nTest):
     # y_predicted = policy.predict(X_test[i].reshape(1,-1))
     # Vdot[i] = X_test[i,0]*X_test[i,3] + X_test[i,1]*X_test[i,4] + X_test[i,2]*X_test[i,5] + X_test[i,3]*y_predicted[i,0] + X_test[i,4]*y_predicted[i,1] + X_test[i,5]*(y_predicted[i,2] - g)
     Vdot[i] = p_x*X_test[i,0]*X_test[i,3] + p_y*X_test[i,1]*X_test[i,4] + p_z*X_test[i,2]*X_test[i,5] + p_vx*X_test[i,3]*y_predicted[i,0] + p_vy*X_test[i,4]*y_predicted[i,1] + p_vz*X_test[i,5]*(y_predicted[i,2] - g)
+    # f_xu = LD.LanderEOM(1.0, X_test[i,:], policy)
+
+    # Vdot[i] = p_x*X_test[i,0]*f_xu[0] + p_y*X_test[i,1]*f_xu[1] + p_z*X_test[i,2]*f_xu[2] + p_vx*X_test[i,3]*f_xu[3] + p_vy*X_test[i,4]*f_xu[4] + p_vz*X_test[i,5]*f_xu[5]
 
 
 negative_idx = np.argwhere(Vdot <= 0)
@@ -137,10 +154,10 @@ ax.legend(['Vdot<=0', 'Vdot>0'], loc='best')
 plt.savefig('{}_pos.png'.format(saveflag))
 
 plt.figure(3)
-plt.scatter(X_test[negative_idx,0],X_test[negative_idx,3],s=5)
-plt.scatter(X_test[positive_idx,0],X_test[positive_idx,3],s=5,c=Vdot[positive_idx])
-# plt.scatter(X_test[:,0],X_test[:,3],s=5)
-plt.colorbar()
+plt.plot(X_test[negative_idx,0],X_test[negative_idx,3],'.')
+plt.plot(X_test[positive_idx,0],X_test[positive_idx,3],'.')
+# plt.scatter(X_test[:,0],X_test[:,3],s=5,c=Vdot)
+# plt.colorbar()
 plt.legend(['Vdot<=0', 'Vdot>0'], loc='best')
 plt.title('Phasespace X')
 plt.xlabel('x [m]')
