@@ -37,7 +37,7 @@ class LyapunovDense(Layer):
             y = tf.matmul(x,tf.transpose(W))
 
         else:
-            y = tf.matmul(x,top_part)
+            y = tf.matmul(x,tf.transpose(top_part))
 
         return tf.nn.tanh(y)   
 
@@ -68,6 +68,7 @@ if __name__ == '__main__':
     V_theta = LyapunovNetwork()
     
     
+    # Load data
     print("Loading mat file")
     base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
     # base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
@@ -88,6 +89,7 @@ if __name__ == '__main__':
     
     X_test = X_test[:10000,:]
 
+    # Load trained policy
     print('Loading Policy')
     filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
     # filename = base_data_folder+formulation+'NetworkTraining/fullmin_max_ANN2_703_tanh_n100.h5'
@@ -110,6 +112,7 @@ if __name__ == '__main__':
     V_theta_evaluated = V_theta.predict(X_test)
     print('after V_theta prediction')
     
+    V_SOS = X_test[:,0]*X_test[:,0] + X_test[:,1]*X_test[:,1] + X_test[:,2]*X_test[:,2] + X_test[:,3]*X_test[:,3] + X_test[:,4]*X_test[:,4] + X_test[:,5]*X_test[:,5]
     
     
     plt.figure(1)
@@ -117,19 +120,19 @@ if __name__ == '__main__':
     plt.plot(X_test[:,0],V_theta_evaluated,'.')
     plt.xlabel('x [m]')
     plt.ylabel('V_theta [-]')
-    plt.subplot(322)
+    plt.subplot(323)
     plt.plot(X_test[:,1],V_theta_evaluated,'.')
     plt.xlabel('y [m]')
     plt.ylabel('V_theta [-]')
-    plt.subplot(323)
+    plt.subplot(325)
     plt.plot(X_test[:,2],V_theta_evaluated,'.')
     plt.xlabel('z [m]')
     plt.ylabel('V_theta [-]')
-    plt.subplot(324)
+    plt.subplot(322)
     plt.plot(X_test[:,3],V_theta_evaluated,'.')
     plt.xlabel('vx [m/s]')
     plt.ylabel('V_theta [-]')
-    plt.subplot(325)
+    plt.subplot(324)
     plt.plot(X_test[:,4],V_theta_evaluated,'.')
     plt.xlabel('vy [m/s]')
     plt.ylabel('V_theta [-]')
@@ -140,6 +143,40 @@ if __name__ == '__main__':
     plt.suptitle('V_theta evaluations')
     plt.tight_layout()
 
+
+    plt.figure(2)
+    plt.subplot(321)
+    plt.plot(X_test[:,0],V_SOS,'.')
+    plt.xlabel('x [m]')
+    plt.ylabel('V_theta [-]')
+    plt.subplot(323)
+    plt.plot(X_test[:,1],V_SOS,'.')
+    plt.xlabel('y [m]')
+    plt.ylabel('V_theta [-]')
+    plt.subplot(325)
+    plt.plot(X_test[:,2],V_SOS,'.')
+    plt.xlabel('z [m]')
+    plt.ylabel('V_theta [-]')
+    plt.subplot(322)
+    plt.plot(X_test[:,3],V_SOS,'.')
+    plt.xlabel('vx [m/s]')
+    plt.ylabel('V_theta [-]')
+    plt.subplot(324)
+    plt.plot(X_test[:,4],V_SOS,'.')
+    plt.xlabel('vy [m/s]')
+    plt.ylabel('V_theta [-]')
+    plt.subplot(326)
+    plt.plot(X_test[:,5],V_SOS,'.')
+    plt.xlabel('vz [m/s]')
+    plt.ylabel('V_theta [-]')
+    plt.suptitle('V_SOS evaluations')
+    plt.tight_layout()
+
+
+
+
+
+    # Check if Vdot is negative?
     X_test_tensor = tf.constant(X_test)
     
     with tf.GradientTape() as tape:
@@ -165,8 +202,88 @@ if __name__ == '__main__':
 
     
 
-    plt.figure(2)
+    plt.figure(3)
     plt.plot(Vdot,'.')
     plt.xlabel('Index [-]')
     plt.ylabel('Vdot [-]')
     
+    negative_idx = np.argwhere(Vdot <= 0)
+    positive_idx = np.argwhere(Vdot > 0)
+    
+    
+    Vdot_negative = Vdot[negative_idx]
+    Vdot_positive = Vdot[positive_idx]
+
+
+    print('# Positive Vdots: {}'.format(positive_idx.shape[0]))
+    print('% Positive Vdots: {} %'.format(100*positive_idx.shape[0]/nTest))
+    print('# Negative Vdots: {}'.format(negative_idx.shape[0]))
+    print('% Negative Vdots: {} %'.format(100*negative_idx.shape[0]/nTest))
+    print("Max of Negative Vdots: {}".format(Vdot_negative.max()))
+    
+        
+    plt.figure(1)
+    plt.plot(Vdot_negative,'.')
+    plt.plot(Vdot_positive,'.')
+    plt.legend(['Vdot<=0', 'Vdot>0'], loc='best')
+    plt.title('Vdot')
+    plt.xlabel('Index [-]')
+    plt.ylabel('Vdot [-]')
+    plt.savefig('{}Vdot.png'.format(saveflag))
+    
+    
+    
+    plt.figure(2)
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(X_test[negative_idx,0], X_test[negative_idx,1], X_test[negative_idx,2])
+    ax.scatter3D(X_test[positive_idx,0],X_test[positive_idx,1],X_test[positive_idx,2])
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
+    ax.legend(['Vdot<=0', 'Vdot>0'], loc='best')
+    plt.savefig('{}_pos.png'.format(saveflag))
+    
+    plt.figure(3)
+    plt.plot(X_test[negative_idx,0],X_test[negative_idx,3],'.')
+    plt.plot(X_test[positive_idx,0],X_test[positive_idx,3],'.')
+    # plt.scatter(X_test[:,0],X_test[:,3],s=5,c=Vdot)
+    # plt.colorbar()
+    plt.legend(['Vdot<=0', 'Vdot>0'], loc='best')
+    plt.title('Phasespace X')
+    plt.xlabel('x [m]')
+    plt.ylabel('vx [m/s]')
+    plt.savefig('{}_phasespace_x.png'.format(saveflag))
+    
+    plt.figure(4)
+    plt.plot(X_test[negative_idx,1],X_test[negative_idx,4],'.')
+    plt.plot(X_test[positive_idx,1],X_test[positive_idx,4],'.')
+    plt.legend(['Vdot<=0', 'Vdot>0'], loc='best')
+    plt.title('Phasespace Y')
+    plt.xlabel('y [y]')
+    plt.ylabel('vy [m/s]')
+    plt.savefig('{}_phasespace_y.png'.format(saveflag))
+    
+    plt.figure(5)
+    plt.plot(X_test[negative_idx,2],X_test[negative_idx,5],'.')
+    plt.plot(X_test[positive_idx,2],X_test[positive_idx,5],'.')
+    plt.legend(['Vdot<=0', 'Vdot>0'], loc='best')
+    plt.title('Phasespace Z')
+    plt.xlabel('z [m]')
+    plt.ylabel('vz [m/s]')
+    plt.savefig('{}_phasespace_z.png'.format(saveflag))
+    
+    
+    
+    plt.figure(3)
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(X_test[:,0],X_test[:,3],Vdot,c=Vdot,s=5)
+    # plt.colorbar()
+    # ax.legend(['Vdot<=0', 'Vdot>0'], loc='best')
+    # ax.title('Phasespace X')
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('vx [m/s]')
+    ax.set_zlabel('Vdot [-]')
+    plt.savefig('{}_phasespace_x_3d.png'.format(saveflag))
+        
+    
+    # Check radially unboundedness?
