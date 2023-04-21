@@ -11,8 +11,8 @@ from matplotlib import pyplot as plt
 
 
 print("Loading mat file")
-# base_data_folder = 'E:/Research_Data/3DoF_RigidBody/'
-base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
+base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
+# base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
 # saveflag = 'customANN2'
@@ -130,6 +130,7 @@ print('\n\n')
 if positive_idx.shape[0] != 0:
     print('Positive Vdot X_test: {}'.format(X_test[positive_idx[0],:]))
 
+plt.ioff()
 
 plt.figure(1)
 plt.plot(Vdot_negative,'.')
@@ -183,13 +184,14 @@ plt.savefig('{}_phasespace_z.png'.format(saveflag))
 
 
 
-plt.figure(3)
-ax = plt.axes(projection='3d')
-ax.scatter3D(X_test[:,0],X_test[:,3],Vdot,c=Vdot,s=5)
-# plt.colorbar()
-# ax.legend(['Vdot<=0', 'Vdot>0'], loc='best')
-# ax.title('Phasespace X')
-ax.set_xlabel('x [m]')
-ax.set_ylabel('vx [m/s]')
-ax.set_zlabel('Vdot [-]')
-plt.savefig('{}_phasespace_x_3d.png'.format(saveflag))
+# plt.figure(6)
+# ax1 = plt.axes(projection='3d')
+# ax1.scatter3D(X_test[negative_idx,0],X_test[negative_idx,3],Vdot[negative_idx],s=5)
+# ax1.scatter3D(X_test[positive_idx,0],X_test[positive_idx,3],Vdot[positive_idx],c=Vdot[positive_idx],s=5)
+# # plt.colorbar()
+# # ax.legend(['Vdot<=0', 'Vdot>0'], loc='best')
+# # ax.title('Phasespace X')
+# ax1.set_xlabel('x [m]')
+# ax1.set_ylabel('vx [m/s]')
+# ax1.set_zlabel('Vdot [-]')
+# plt.savefig('{}_phasespace_x_3d.png'.format(saveflag))
