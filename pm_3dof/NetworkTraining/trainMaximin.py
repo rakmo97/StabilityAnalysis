@@ -93,7 +93,7 @@ print("Loading mat file")
 base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'fullmin_max1step_25episodes'
+saveflag = 'fullmin_max1step_40episodes'
 
 Xfull = matfile['Xfull_2']
 tfull = matfile['tfull_2']
@@ -164,7 +164,7 @@ opt_max = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, a
 batch_size=100
 epochs_min = 10000
 epochs_max = 1
-episodes = 25
+episodes = 40
 patience = 25
 wait = 0
 best = float('inf')
