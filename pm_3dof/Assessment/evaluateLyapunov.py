@@ -11,14 +11,14 @@ from matplotlib import pyplot as plt
 
 
 print("Loading mat file")
-base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
-# base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
+# base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
+base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
 # saveflag = 'customANN2'
 # saveflag = 'fullmin_max'
 # saveflag = 'fullmin_max1step'
-saveflag = 'fullmin_max1step_20episodes'
+saveflag = 'fullmin_max1step_25episodes'
 
 
 Xfull = matfile['Xfull_2']
@@ -35,7 +35,8 @@ print('Loading Policy')
 # filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
 # filename = base_data_folder+formulation+'NetworkTraining/fullmin_max_ANN2_703_tanh_n100.h5'
 # filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_ANN2_703_tanh_n100.h5'
-filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_20episodesANN2_703_tanh_n100.h5'
+# filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_20episodesANN2_703_tanh_n100.h5'
+filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_25episodesANN2_703_tanh_n100.h5'
 policy = models.load_model(filename)
 
 nState    =   6
