@@ -27,18 +27,18 @@ def MSE(y_true, y_predicted):
     return tf.reduce_mean(tf.square(y_predicted - y_true))
 
 @tf.function
-def MeanVdot(x, y_predicted):
+def MeanVdot_negative(x, y_predicted):
     g = tf.constant(9.81, dtype=tf.float64)
 
     x = tf.cast(x, dtype=tf.float64)   
     y_predicted = tf.cast(y_predicted, dtype=tf.float64)   
 
-    return tf.reduce_mean(x[:,0]*x[:,3] + x[:,1]*x[:,4] + x[:,2]*x[:,5] + x[:,3]*y_predicted[:,0] + x[:,4]*y_predicted[:,1] + x[:,5]*(y_predicted[:,2] - g))
+    return -tf.reduce_mean(x[:,0]*x[:,3] + x[:,1]*x[:,4] + x[:,2]*x[:,5] + x[:,3]*y_predicted[:,0] + x[:,4]*y_predicted[:,1] + x[:,5]*(y_predicted[:,2] - g))
 
 @tf.function
-def MeanLagrangian(x, y_true, y_predicted):
+def MeanAugmentedLagrangian(x, y_true, y_predicted, mu):
 
-    L = MSE(y_true, y_predicted) + multiplier*MeanVdot(x, y_predicted)
+    L = MSE(y_true, y_predicted) - multiplier*(MeanVdot_negative(x, y_predicted) - slack) + (1/(2*mu))*(MeanVdot_negative(x, y_predicted) - slack)**2
 
     return L
 
@@ -47,26 +47,27 @@ def MeanLagrangian(x, y_true, y_predicted):
 
 @tf.function
 def min_step(x, y):
-
+    
     # Gradient tape for autodiff
     with tf.GradientTape() as tape:
-
+        tape.watch(slack)
         # Forward Pass
         y_pred = TF(x, training=True)
         y_pred = tf.cast(y_pred, dtype=tf.float64)
 
 
         # Compute the lagrangian value for this minibatch.
-        L_b = MeanLagrangian(x, y, y_pred)
-
+        L_b = MeanAugmentedLagrangian(x, y, y_pred, mu)
 
 
     # Calculate gradients wrt weights
-    grads = tape.gradient(L_b, TF.trainable_weights)
+    grads = tape.gradient(L_b, [TF.trainable_weights,slack])
 
-    
+
     #  Apply gradients
-    opt_min.apply_gradients(zip(grads, TF.trainable_weights))
+    # opt_min.apply_gradients(zip(grads, [TF.trainable_weights,slack]))
+    opt_min.apply_gradients(zip(grads[0], TF.trainable_weights))
+    opt_min.apply_gradients(zip(grads[1], slack))
 
     # Update training metric.
     # train_loss_metric.update_state(x, y, y_pred)
@@ -79,7 +80,7 @@ def min_step(x, y):
 def test_step(x, y):
     val_y_pred = TF(x, training=False)
     # Update val metrics
-    val_loss = MeanLagrangian(x, y, val_y_pred)
+    val_loss = MeanAugmentedLagrangian(x, y, val_y_pred,mu)
     val_acc_metric.update_state(y, val_y_pred)
 
     return val_loss
@@ -125,21 +126,6 @@ n_neurons = 100
 
 
 # # Define ANN Architecture
-# TF = Sequential()
-# # TF.add(layers.BatchNormalization())
-# TF.add(layers.Dense(n_neurons, activation=activation,kernel_initializer='normal',input_dim=6))
-# TF.add(layers.Dense(n_neurons, activation=activation,kernel_initializer='normal'))
-# # TF.add(layers.Dense(n_neurons, activation=activation,kernel_initializer='normal'))
-# # TF.add(layers.Dense(n_neurons, activation=activation,kernel_initializer='normal'))
-# # TF.add(layers.Dense(n_neurons, activation=activation,kernel_initializer='normal'))
-# # TF.add(layers.Dense(n_neurons, activation=activation,kernel_initializer='normal'))
-# # TF.add(layers.Dense(n_neurons, activation=activation,kernel_initializer='normal'))
-# # TF.add(layers.Dense(n_neurons, activation=activation,kernel_initializer='normal'))
-# # TF.add(layers.Dense(25, activation=activation,kernel_initializer='normal'))
-# # TF.add(layers.BatchNormalization())
-# TF.add(layers.Dense(t_train.shape[1], activation='linear',kernel_initializer='normal'))
-
-
 inputs = keras.Input(shape=(6,))
 x1 = layers.Dense(n_neurons, activation=activation, kernel_initializer='normal')(inputs)
 x2 = layers.Dense(n_neurons, activation=activation, kernel_initializer='normal')(x1)
@@ -171,8 +157,8 @@ best = float('inf')
 
 
 # Prepare the metrics.
-train_loss_metric = MeanLagrangian
-val_loss_metric  = MeanLagrangian
+train_loss_metric = MeanAugmentedLagrangian
+val_loss_metric  = MeanAugmentedLagrangian
 
 
 train_acc_metric = keras.metrics.MeanSquaredError()
@@ -183,16 +169,16 @@ val_acc_metric  = keras.metrics.MeanSquaredError()
 # Training Loop
 # ==================================
 
-history = {'loss': [], 'acc': [], 'val_loss': [], 'val_acc': [], 'multiplier': []}
+history = {'loss': [], 'acc': [], 'val_loss': [], 'val_acc': [], 'multiplier': [], 'slack': [], 'mu': [], 'alpha': [], 'omega': [], 'eta': []}
 
 # Reserve 10,000 samples for validation.
 x_val = X_train[-10000:]
 y_val = t_train[-10000:]
-x_train = X_train[:-10000]
-y_train = t_train[:-10000]
+# x_train = X_train[:-10000]
+# y_train = t_train[:-10000]
 
-# x_train = X_train[:-4500000]
-# y_train = t_train[:-4500000]
+x_train = X_train[:-4500000]
+y_train = t_train[:-4500000]
 print("Utelized training size: {}".format(x_train.shape[0]))
 
 
@@ -208,6 +194,34 @@ val_dataset = val_dataset.batch(batch_size)
 
 # Lagrange multiplier
 multiplier = [tf.Variable(0.0001, dtype=tf.float64)]
+slack = [tf.Variable(0.0001, dtype=tf.float64)]
+etabar = 0.1
+omegabar = 0.1
+mubar = 0.1
+tau = 0.1
+gammabar = 0.1
+alphaomega = 0.1
+betaomega = 0.1
+alphaeta = 0.05
+betaeta = 0.05
+alphastar = 0.1
+betastar = 0.1
+etastar = 0.001
+
+
+mu = mubar
+alpha = min(mu,gammabar)
+omega = omegabar*alpha**alphaomega
+eta = etabar*alpha**alphaeta
+
+slackTensor = tf.constant(slack[0])
+history['slack'].append(slack)
+history['mu'].append(mu)
+history['alpha'].append(alpha)
+history['eta'].append(eta)
+history['omega'].append(omega) 
+multiplierTensor = tf.constant(multiplier[0])
+history['multiplier'].append(multiplierTensor)
 
 for episode in range(episodes):
 
@@ -215,6 +229,7 @@ for episode in range(episodes):
     print("==============================")
     print("\nStart of episode {} of {}".format(episode,episodes))
 
+    print('Minimization Step')
     for epoch in range(epochs_min):
         print("\nStart of epoch %d" % (epoch,))
         start_time = time.time()
@@ -224,15 +239,9 @@ for episode in range(episodes):
             
             # Min step function
             loss_value = min_step(x_batch_train, y_batch_train)
-            
-            # Log every 200 batches.
-            # if step % 10000 == 0:
-            #     print(
-            #         "Training loss (for one batch) at step %d: %.4e"
-            #         % (step, float(loss_value))
-            #     )
-            #     print("Seen so far: %s samples" % ((step + 1) * batch_size))
-            
+
+
+
         # Display metrics at the end of each epoch.
         train_acc = train_acc_metric.result()
         history['loss'].append(loss_value)
@@ -274,36 +283,54 @@ for episode in range(episodes):
             print("Early Stopping condition met, breaking")
             break
 
-
-    for epoch in range(epochs_max):
-        # MAX STEP
-        for x_max_step, y_max_step in train_dataset_full_batch:
-        # for step, (x_max_step, y_max_step) in enumerate(train_dataset):
-
-            # Max step funciton
-            # multiplier = max_step(x_full_train, y_full_train)
-            # Forward Pass
-            y_pred = TF(x_max_step, training=True)
-            y_pred = tf.cast(y_pred, dtype=tf.float64)
+    for x_max_step, y_max_step in train_dataset_full_batch:
         
-            # Calculate gradients wrt multiplier (analytical form, not autodiff)
-            grads = [MeanVdot(x_max_step, y_pred)]
+        y_pred = TF(x_max_step, training=True)
+        c = MeanVdot_negative(x_max_step, y_pred) - slack
         
+
+    if tf.norm(c) < eta[episode]:
+        if tf.norm(c) < etastar: # Test for convergence
+            break
         
-            #  Apply gradients
-            opt_max.apply_gradients(zip(grads, multiplier))
+        #Update multipliers, tighten tolerances
+        multiplier[0].assign_sub(c/mu)
+        alpha = mu
+        eta = eta*(alpha**betaeta)
+        omega = omega*(alpha**betaomega)
+        
+    else:
+        # decrease penalty parameter, tighten tolerances
+        mu = tau*mu
+        alpha - mu*gammabar
+        eta = etabar*(alpha**betaeta)
+        omega = omegabar*(alpha**betaomega)
 
 
-    
+    print("\n\n\n------ Episode Summary ------")
+    print('constraint: {}'.format(c))
+    print('multiplier: {}'.format(multiplier))
+    print('slack: {}'.format(slack))
+    print('mu: {}'.format(mu))
+    print('alpha: {}'.format(alpha))
+    print('eta: {}'.format(eta))
+    print('omega: {}'.format(omega))
+
+    slackTensor = tf.constant(slack[0])
+    history['slack'].append(slack)
+    history['mu'].append(mu)
+    history['alpha'].append(alpha)
+    history['eta'].append(eta)
+    history['omega'].append(omega)   
     multiplierTensor = tf.constant(multiplier[0])
     history['multiplier'].append(multiplierTensor)
-    print("Multiplier Value: %.4f" % (float(multiplierTensor),))
-
 
 
 # ==================================
 # Test and Save
 # ==================================
+
+
 
 
 # Plotting histories
