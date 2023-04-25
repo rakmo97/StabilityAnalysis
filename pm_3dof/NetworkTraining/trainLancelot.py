@@ -150,7 +150,7 @@ opt_max = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, a
 batch_size=100
 epochs_min = 10000
 epochs_max = 1
-episodes = 25
+episodes = 5
 patience = 25
 wait = 0
 best = float('inf')
@@ -197,7 +197,7 @@ multiplier = [tf.Variable(0.0001, dtype=tf.float64)]
 slack = [tf.Variable(0.0001, dtype=tf.float64)]
 etabar = 0.1
 omegabar = 0.1
-mubar = 0.1
+mubar = 1.0
 tau = 0.1
 gammabar = 0.1
 alphaomega = 0.1
@@ -224,6 +224,7 @@ multiplierTensor = tf.constant(multiplier[0])
 history['multiplier'].append(multiplierTensor)
 
 for episode in range(episodes):
+    wait = 0
 
     print("==============================")
     print("==============================")
@@ -231,7 +232,7 @@ for episode in range(episodes):
 
     print('Minimization Step')
     for epoch in range(epochs_min):
-        print("\nStart of epoch %d" % (epoch,))
+        print("Start of epoch {} (episode {}".format(epoch,episode))
         start_time = time.time()
 
         # MIN STEP
@@ -289,12 +290,12 @@ for episode in range(episodes):
         c = MeanVdot_negative(x_max_step, y_pred) - slack
         
 
-    if tf.norm(c) < eta[episode]:
+    if tf.norm(c) < eta:
         if tf.norm(c) < etastar: # Test for convergence
             break
         
         #Update multipliers, tighten tolerances
-        multiplier[0].assign_sub(c/mu)
+        multiplier[0].assign_sub((c/mu).numpy().tolist()[0])
         alpha = mu
         eta = eta*(alpha**betaeta)
         omega = omega*(alpha**betaomega)

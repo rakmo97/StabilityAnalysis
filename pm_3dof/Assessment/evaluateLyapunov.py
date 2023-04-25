@@ -11,8 +11,8 @@ from matplotlib import pyplot as plt
 
 
 print("Loading mat file")
-# base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
-base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
+base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
+# base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
 # saveflag = 'customANN2'
