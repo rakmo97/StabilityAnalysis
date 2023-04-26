@@ -52,7 +52,7 @@ g = 9.81
 
 
 
-batch_size=1000
+batch_size = 10000
 epochs = 10000
 patience = 25
 wait = 0
@@ -72,11 +72,11 @@ history = {'Vdot_history': [], 'Vdot_val_history': []}
 # Reserve 10,000 samples for validation.
 x_val = X_train[-10000:]
 y_val = t_train[-10000:]
-x_train = X_train[:-10000]
-y_train = t_train[:-10000]
+# x_train = X_train[:-10000]
+# y_train = t_train[:-10000]
 
-# x_train = X_train[:-4500000]
-# y_train = t_train[:-4500000]
+x_train = X_train[:-4500000]
+y_train = t_train[:-4500000]
 
 print("x_val: {}".format(x_val.shape))
 print("y_val: {}".format(y_val.shape))
@@ -122,13 +122,13 @@ for epoch in range(epochs):
             
             Vdotphi = tf.reduce_mean(dVphi_dx[:,0]*x_batch_train[:,3] + dVphi_dx[:,1]*x_batch_train[:,4] + dVphi_dx[:,2]*x_batch_train[:,5] + dVphi_dx[:,3]*u_pred[:,0] + dVphi_dx[:,4]*u_pred[:,1] + dVphi_dx[:,5]*(u_pred[:,2] - g))
 
-        if step % 10000 == 0:
-            print("Vdotphi for step {}: {}".format(step,Vdotphi))
+        if step % 10 == 0:
+            print("Vdotphi for step {} of {}: {}".format(step,x_train.shape[0]/batch_size,Vdotphi))
 
         dVdotphi_dphi = tape_phi.gradient(Vdotphi, V_phi.trainable_variables)
         opt.apply_gradients(zip(dVdotphi_dphi, V_phi.trainable_variables))
 
-    history['Vdot_history'].append(Vdotphi)
+    history['Vdot_history'].append(Vdotphi.numpy())
     
     
     # Run a validation loop at the end of each epoch.
@@ -150,7 +150,7 @@ for epoch in range(epochs):
         
         Vdotphi_val = tf.reduce_mean(dVphi_dx[:,0]*x_batch_val[:,3] + dVphi_dx[:,1]*x_batch_val[:,4] + dVphi_dx[:,2]*x_batch_val[:,5] + dVphi_dx[:,3]*u_pred[:,0] + dVphi_dx[:,4]*u_pred[:,1] + dVphi_dx[:,5]*(u_pred[:,2] - g))
    
-    history['Vdot_val_history'].append(Vdotphi_val)
+    history['Vdot_val_history'].append(Vdotphi_val.numpy())
 
     wait += 1
     if Vdotphi_val < best:
@@ -174,7 +174,7 @@ plt.plot(history['Vdot_history'])
 plt.plot(history['Vdot_val_history'])
 plt.legend(['train', 'validation'], loc='best')
 plt.title('Vdot')
-plt.yscale('log')
+# plt.yscale('log')
 plt.xlabel('Epochs')
 plt.ylabel('Vdot (-)')
 plt.savefig('{}nettrain_Vdot.png'.format(saveflag))
