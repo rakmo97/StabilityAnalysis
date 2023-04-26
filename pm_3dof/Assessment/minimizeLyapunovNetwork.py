@@ -26,16 +26,14 @@ saveflag = 'customANN2'
 # saveflag = 'fullmin_max1step'
 # saveflag = 'fullmin_max1step_20episodes'
 
-
-Xfull = matfile['Xfull_2']
-tfull = matfile['tfull_2']
 X_train = matfile['Xtrain2'].reshape(-1,6)
 t_train = matfile['ttrain2']
-X_test = matfile['Xtest2'].reshape(-1,6)
-t_test = matfile['ttest2']
 
 
-X_test = X_test[:10000,:]
+X_positive_matfile = loadmat('X_positive.mat')
+X_positive = X_positive_matfile['X_positive'].reshape(-1,6)
+t_positive = X_positive_matfile['t_positive'].reshape(-1,3)
+
 
 # Load trained policy
 print('Loading Policy')
@@ -52,7 +50,7 @@ g = 9.81
 
 
 
-batch_size = 10000
+batch_size = 100
 epochs = 10000
 patience = 25
 wait = 0
@@ -72,16 +70,18 @@ history = {'Vdot_history': [], 'Vdot_val_history': []}
 # Reserve 10,000 samples for validation.
 x_val = X_train[-10000:]
 y_val = t_train[-10000:]
-# x_train = X_train[:-10000]
-# y_train = t_train[:-10000]
+x_train = X_train[:-10000]
+y_train = t_train[:-10000]
 
-x_train = X_train[:-4500000]
-y_train = t_train[:-4500000]
+# x_train = X_train[:-4500000]
+# y_train = t_train[:-4500000]
+
+x_train = X_positive
+y_train = t_positive
+
 
 print("x_val: {}".format(x_val.shape))
-print("y_val: {}".format(y_val.shape))
 print("x_train: {}".format(x_train.shape))
-print("y_train: {}".format(y_train.shape))
 
 # Prepare the training dataset.
 train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
