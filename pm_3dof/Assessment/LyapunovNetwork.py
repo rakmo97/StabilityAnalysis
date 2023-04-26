@@ -4,6 +4,7 @@ from tensorflow.keras.layers import Dense, Dot, Layer
 from tensorflow.keras import Model, Input, models
 import numpy as np
 from scipy.io import loadmat
+from scipy.io import savemat
 from matplotlib import pyplot as plt
 
 
@@ -91,7 +92,7 @@ if __name__ == '__main__':
     X_test = matfile['Xtest2'].reshape(-1,6)
     t_test = matfile['ttest2']
     
-    X_test = X_train[:500000,:]
+    X_test = X_train[:50000,:]
 
     # Load trained policy
     print('Loading Policy')
@@ -224,6 +225,19 @@ if __name__ == '__main__':
     print('# Negative Vdots: {}'.format(negative_idx.shape[0]))
     print('% Negative Vdots: {} %'.format(100*negative_idx.shape[0]/nTest))
     print("Max of Negative Vdots: {}".format(Vdot_negative.max()))
+    
+    
+    
+    X_positive = X_test[positive_idx]
+    t_positive = t_test[positive_idx]
+    mdic = {'X_positive': X_positive,'t_positive': t_positive}
+    savemat("X_positive.mat", mdic)
+    
+    
+    
+    
+    
+    
     
         
     plt.figure(1)

@@ -295,7 +295,8 @@ for episode in range(episodes):
             break
         
         #Update multipliers, tighten tolerances
-        multiplier[0].assign_sub((c/mu).numpy().tolist()[0])
+        # multiplier[0].assign_sub((c/mu).numpy().tolist()[0])
+        multiplier[0].assign(np.max([0,multiplier[0].numpy() - (c/mu).numpy() ]))
         alpha = mu
         eta = eta*(alpha**betaeta)
         omega = omega*(alpha**betaomega)
