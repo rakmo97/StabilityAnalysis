@@ -90,11 +90,11 @@ def test_step(x, y):
 # ==================================
 # Load in training and testing data
 print("Loading mat file")
-# base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
-base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
+base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
+# base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'fullmin_max1step_25episodes'
+saveflag = 'lancelot_100episodes'
 
 Xfull = matfile['Xfull_2']
 tfull = matfile['tfull_2']
@@ -150,7 +150,7 @@ opt_max = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, a
 batch_size=100
 epochs_min = 10000
 epochs_max = 1
-episodes = 5
+episodes = 100
 patience = 25
 wait = 0
 best = float('inf')
@@ -174,11 +174,11 @@ history = {'loss': [], 'acc': [], 'val_loss': [], 'val_acc': [], 'multiplier': [
 # Reserve 10,000 samples for validation.
 x_val = X_train[-10000:]
 y_val = t_train[-10000:]
-# x_train = X_train[:-10000]
-# y_train = t_train[:-10000]
+x_train = X_train[:-10000]
+y_train = t_train[:-10000]
 
-x_train = X_train[:-4500000]
-y_train = t_train[:-4500000]
+# x_train = X_train[:-4500000]
+# y_train = t_train[:-4500000]
 print("Utelized training size: {}".format(x_train.shape[0]))
 
 
