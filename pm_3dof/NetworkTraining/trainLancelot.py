@@ -296,7 +296,7 @@ for episode in range(episodes):
         
         #Update multipliers, tighten tolerances
         # multiplier[0].assign_sub((c/mu).numpy().tolist()[0])
-        multiplier[0].assign(np.max([0,multiplier[0].numpy() - (c/mu).numpy() ]))
+        multiplier[0].assign(tf.math.maximum(0,multiplier[0] - (c/mu))[0])        
         alpha = mu
         eta = eta*(alpha**betaeta)
         omega = omega*(alpha**betaomega)
