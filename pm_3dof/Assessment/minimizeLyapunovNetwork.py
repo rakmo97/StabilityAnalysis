@@ -35,6 +35,9 @@ X_positive = X_positive_matfile['X_positive'].reshape(-1,6)
 t_positive = X_positive_matfile['t_positive'].reshape(-1,3)
 
 
+print('Training on {} datapoints'.format(X_positive.shape[0]))
+
+
 # Load trained policy
 print('Loading Policy')
 filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
@@ -151,7 +154,8 @@ for epoch in range(epochs):
         Vdotphi_val = tf.reduce_mean(dVphi_dx[:,0]*x_batch_val[:,3] + dVphi_dx[:,1]*x_batch_val[:,4] + dVphi_dx[:,2]*x_batch_val[:,5] + dVphi_dx[:,3]*u_pred[:,0] + dVphi_dx[:,4]*u_pred[:,1] + dVphi_dx[:,5]*(u_pred[:,2] - g))
    
     history['Vdot_val_history'].append(Vdotphi_val.numpy())
-
+    print('Val loss: {}'.format(Vdotphi_val))
+    
     wait += 1
     if Vdotphi_val < best:
         print("Val loss: {} < best: {}, setting wait to 0".format(Vdotphi_val, best))
