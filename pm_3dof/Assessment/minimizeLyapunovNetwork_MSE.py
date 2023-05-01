@@ -17,11 +17,11 @@ V_phi = LyapunovNetwork()
 
  # Load data
 print("Loading mat file")
-base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
-# base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
+# base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
+base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'customANN2'
+saveflag = 'lyapunov_MSE_'
 # saveflag = 'fullmin_max'
 # saveflag = 'fullmin_max1step'
 # saveflag = 'fullmin_max1step_20episodes'
@@ -48,9 +48,9 @@ g = 9.81
 
 
 
-batch_size = 100
+batch_size = 1000
 epochs = 10000
-patience = 25
+patience = 30
 wait = 0
 best = float('inf')
 
@@ -68,11 +68,11 @@ history = {'Vdot_history': [], 'Vdot_val_history': []}
 # Reserve 10,000 samples for validation.
 x_val = X_train[-10000:]
 y_val = t_train[-10000:]
-# x_train = X_train[:-10000]
-# y_train = t_train[:-10000]
+x_train = X_train[:-10000]
+y_train = t_train[:-10000]
 
-x_train = X_train[:-4500000]
-y_train = t_train[:-4500000]
+# x_train = X_train[:-4500000]
+# y_train = t_train[:-4500000]
 
 
 
@@ -166,7 +166,7 @@ for epoch in range(epochs):
 
 # Save model
 print("\nSaving ANN!")
-saveout_filename = base_data_folder + formulation + "NetworkTraining/MinimizedLyapunovNetwork"
+saveout_filename = base_data_folder + formulation + "NetworkTraining/MinimizedLyapunovNetwork_MSE"
 print('Filename: ' + saveout_filename)
 V_phi.save_weights(saveout_filename)
 

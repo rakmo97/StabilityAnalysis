@@ -147,7 +147,7 @@ opt_max = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, a
 
 
 # Batch/early stopping parameters
-batch_size=100
+batch_size=1000
 epochs_min = 10000
 epochs_max = 1
 episodes = 100
@@ -174,8 +174,10 @@ history = {'loss': [], 'acc': [], 'val_loss': [], 'val_acc': [], 'multiplier': [
 # Reserve 10,000 samples for validation.
 x_val = X_train[-10000:]
 y_val = t_train[-10000:]
-x_train = X_train[:-10000]
-y_train = t_train[:-10000]
+# x_train = X_train[:-10000]
+# y_train = t_train[:-10000]
+x_train = X_train[:1000000]
+y_train = t_train[:1000000]
 
 # x_train = X_train[:-4500000]
 # y_train = t_train[:-4500000]

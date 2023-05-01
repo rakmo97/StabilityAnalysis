@@ -64,8 +64,8 @@ class LyapunovNetwork(Model):
 if __name__ == '__main__':
     
     plt.close('all')
-    base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
-    # base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
+    # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
+    base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
     formulation = 'pm_3dof/'
     saveout_filename = base_data_folder + formulation + "NetworkTraining/MinimizedLyapunovNetwork"
 
@@ -75,9 +75,6 @@ if __name__ == '__main__':
     
     # Load data
     print("Loading mat file")
-    base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
-    # base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
-    formulation = 'pm_3dof/'
     matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
     saveflag = 'customANN2'
     # saveflag = 'fullmin_max'

@@ -11,10 +11,6 @@ import time
 
 
 
-
-V_phi = LyapunovNetwork()
-
-
  # Load data
 print("Loading mat file")
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
@@ -25,6 +21,13 @@ saveflag = 'customANN2'
 # saveflag = 'fullmin_max'
 # saveflag = 'fullmin_max1step'
 # saveflag = 'fullmin_max1step_20episodes'
+
+saveout_filename = base_data_folder + formulation + "NetworkTraining/MinimizedLyapunovNetwork"
+
+
+V_phi = LyapunovNetwork()
+V_phi.load_weights(saveout_filename)
+
 
 X_train = matfile['Xtrain2'].reshape(-1,6)
 t_train = matfile['ttrain2']
@@ -53,7 +56,7 @@ g = 9.81
 
 
 
-batch_size = 100
+batch_size = 10
 epochs = 10000
 patience = 25
 wait = 0
@@ -169,7 +172,6 @@ for epoch in range(epochs):
 
 # Save model
 print("\nSaving ANN!")
-saveout_filename = base_data_folder + formulation + "NetworkTraining/MinimizedLyapunovNetwork"
 print('Filename: ' + saveout_filename)
 V_phi.save_weights(saveout_filename)
 
