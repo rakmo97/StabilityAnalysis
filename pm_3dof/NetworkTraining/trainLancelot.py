@@ -36,9 +36,20 @@ def MeanVdot_negative(x, y_predicted):
     return -tf.reduce_mean(x[:,0]*x[:,3] + x[:,1]*x[:,4] + x[:,2]*x[:,5] + x[:,3]*y_predicted[:,0] + x[:,4]*y_predicted[:,1] + x[:,5]*(y_predicted[:,2] - g))
 
 @tf.function
+def MaxVdot_negative(x, y_predicted):
+    g = tf.constant(9.81, dtype=tf.float64)
+
+    x = tf.cast(x, dtype=tf.float64)   
+    y_predicted = tf.cast(y_predicted, dtype=tf.float64)   
+
+    return -tf.reduce_max(x[:,0]*x[:,3] + x[:,1]*x[:,4] + x[:,2]*x[:,5] + x[:,3]*y_predicted[:,0] + x[:,4]*y_predicted[:,1] + x[:,5]*(y_predicted[:,2] - g))
+
+
+@tf.function
 def MeanAugmentedLagrangian(x, y_true, y_predicted, mu):
 
-    L = MSE(y_true, y_predicted) - multiplier*(MeanVdot_negative(x, y_predicted) - slack) + (1/(2*mu))*(MeanVdot_negative(x, y_predicted) - slack)**2
+    # L = MSE(y_true, y_predicted) - multiplier*(MeanVdot_negative(x, y_predicted) - slack) + (1/(2*mu))*(MeanVdot_negative(x, y_predicted) - slack)**2
+    L = MSE(y_true, y_predicted) - multiplier*(MaxVdot_negative(x, y_predicted) - slack) + (1/(2*mu))*(MaxVdot_negative(x, y_predicted) - slack)**2
 
     return L
 
@@ -82,8 +93,10 @@ def test_step(x, y):
     # Update val metrics
     val_loss = MeanAugmentedLagrangian(x, y, val_y_pred,mu)
     val_acc_metric.update_state(y, val_y_pred)
+    val_max_vdot = -MaxVdot_negative(x_batch_val, val_y_pred)
 
-    return val_loss
+
+    return val_loss, val_max_vdot
 
 # ==================================
 # Load Data
@@ -94,7 +107,7 @@ base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'lancelot_100episodes'
+saveflag = 'lancelot_max_100episodes'
 
 Xfull = matfile['Xfull_2']
 tfull = matfile['tfull_2']
@@ -169,7 +182,7 @@ val_acc_metric  = keras.metrics.MeanSquaredError()
 # Training Loop
 # ==================================
 
-history = {'loss': [], 'acc': [], 'val_loss': [], 'val_acc': [], 'multiplier': [], 'slack': [], 'mu': [], 'alpha': [], 'omega': [], 'eta': []}
+history = {'loss': [], 'acc': [], 'val_loss': [], 'val_acc': [], 'multiplier': [], 'slack': [], 'mu': [], 'alpha': [], 'omega': [], 'eta': [], 'constraint': []}
 
 # Reserve 10,000 samples for validation.
 x_val = X_train[-10000:]
@@ -195,7 +208,7 @@ val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 val_dataset = val_dataset.batch(batch_size)
 
 # Lagrange multiplier
-multiplier = [tf.Variable(0.0001, dtype=tf.float64)]
+multiplier = [tf.Variable(10.0, dtype=tf.float64)]
 slack = [tf.Variable(0.0001, dtype=tf.float64)]
 etabar = 0.1
 omegabar = 0.1
@@ -210,6 +223,7 @@ alphastar = 0.1
 betastar = 0.1
 etastar = 0.001
 
+val_max_vdot = 0
 
 mu = mubar
 alpha = min(mu,gammabar)
@@ -217,7 +231,7 @@ omega = omegabar*alpha**alphaomega
 eta = etabar*alpha**alphaeta
 
 slackTensor = tf.constant(slack[0])
-history['slack'].append(slack)
+history['slack'].append(slackTensor)
 history['mu'].append(mu)
 history['alpha'].append(alpha)
 history['eta'].append(eta)
@@ -257,14 +271,13 @@ for episode in range(episodes):
         # Run a validation loop at the end of each epoch.
         for x_batch_val, y_batch_val in val_dataset:
             # TEST STEP FUNCTION
-            val_loss = test_step(x_batch_val, y_batch_val)
+            val_loss, val_max_vdot = test_step(x_batch_val, y_batch_val)
 
         val_acc = val_acc_metric.result()
         history['val_loss'].append(val_loss)
         history['val_acc'].append(val_acc)
 
         val_acc_metric.reset_states()
-    
 
         # The early stopping strategy: stop the training if `val_loss` does not
         # decrease over a certain number of epochs.
@@ -274,6 +287,8 @@ for episode in range(episodes):
         print("Validation Loss epoch (Lagrangian): %.4f" % (float(val_loss),))
         print("Training Metric epoch (MSE): %.4f" % (float(train_acc),))
         print("Validation Metric (MSE))): %.4e" % (float(val_acc),))
+        print("Max Vdot: {}".format(val_max_vdot))
+        print("slack: {}".format(slack))
         print("Time taken: %.2fs" % (time.time() - start_time))
         print("val_loss = {}".format(val_loss))
         print("best = {}".format(best))
@@ -289,7 +304,8 @@ for episode in range(episodes):
     for x_max_step, y_max_step in train_dataset_full_batch:
         
         y_pred = TF(x_max_step, training=True)
-        c = MeanVdot_negative(x_max_step, y_pred) - slack
+        # c = MeanVdot_negative(x_max_step, y_pred) - slack
+        c = MaxVdot_negative(x_max_step, y_pred) - slack
         
 
     if tf.norm(c) < eta:
@@ -321,13 +337,14 @@ for episode in range(episodes):
     print('omega: {}'.format(omega))
 
     slackTensor = tf.constant(slack[0])
-    history['slack'].append(slack)
+    history['slack'].append(slackTensor)
     history['mu'].append(mu)
     history['alpha'].append(alpha)
     history['eta'].append(eta)
     history['omega'].append(omega)   
     multiplierTensor = tf.constant(multiplier[0])
     history['multiplier'].append(multiplierTensor)
+    history['constraint'].append(c)
 
 
 # ==================================
@@ -366,6 +383,24 @@ plt.xlabel('Epochs')
 plt.ylabel('Cost (MSE)')
 plt.savefig('{}nettrain_lagrangemultiplier.png'.format(saveflag))
 
+plt.figure(4)
+plt.plot(np.array(history['constraint']))
+plt.legend(['Constraint value'], loc='best')
+plt.title(' ')
+plt.xlabel('Epochs')
+plt.ylabel('Constraint Value')
+plt.savefig('{}nettrain_constraint_value.png'.format(saveflag))
+
+
+plt.figure(5)
+plt.plot(np.array(history['slack']))
+plt.legend(['Slack value'], loc='best')
+plt.title(' ')
+plt.xlabel('Episodes')
+plt.ylabel('Slack Value')
+plt.savefig('{}nettrain_slack_value.png'.format(saveflag))
+
+
 
 # Save model
 print("\nSaving ANN!")
@@ -385,7 +420,7 @@ yvis = TF.predict(X_test[idxs].reshape(-1,6));
 
 
 
-plt.figure(4)
+plt.figure(6)
 plt.subplot(311)
 plt.plot(t_test[idxs,0])
 plt.plot(yvis[:,0],'--')
