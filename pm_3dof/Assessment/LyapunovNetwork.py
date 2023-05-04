@@ -67,7 +67,7 @@ if __name__ == '__main__':
     # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
     base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
     formulation = 'pm_3dof/'
-    saveout_filename = base_data_folder + formulation + "NetworkTraining/MinimizedLyapunovNetwork"
+    saveout_filename = base_data_folder + formulation + "NetworkTraining/MinimizedLyapunovNetwork_MSE"
 
     # Create an instance of the model
     V_theta = LyapunovNetwork()

@@ -35,7 +35,9 @@ print('Loading Policy')
 # filename = base_data_folder+formulation+'NetworkTraining/fullmin_max_ANN2_703_tanh_n100.h5'
 # filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_ANN2_703_tanh_n100.h5'
 # filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_25episodesANN2_703_tanh_n100.h5'
-filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_40episodesANN2_703_tanh_n100.h5'
+# filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_40episodesANN2_703_tanh_n100.h5'
+# filename = base_data_folder+formulation+'NetworkTraining/regloss_w1_ANN2_703_tanh_n100.h5'
+filename = base_data_folder+formulation+'NetworkTraining/regloss_w10_adam_ANN2_703_tanh_n100.h5'
 policy = models.load_model(filename)
 
 nState    =   6

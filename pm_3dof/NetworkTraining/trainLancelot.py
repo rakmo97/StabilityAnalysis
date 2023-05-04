@@ -42,14 +42,14 @@ def MaxVdot_negative(x, y_predicted):
     x = tf.cast(x, dtype=tf.float64)   
     y_predicted = tf.cast(y_predicted, dtype=tf.float64)   
 
-    return -tf.reduce_max(x[:,0]*x[:,3] + x[:,1]*x[:,4] + x[:,2]*x[:,5] + x[:,3]*y_predicted[:,0] + x[:,4]*y_predicted[:,1] + x[:,5]*(y_predicted[:,2] - g))
+    return tf.reduce_max(x[:,0]*x[:,3] + x[:,1]*x[:,4] + x[:,2]*x[:,5] + x[:,3]*y_predicted[:,0] + x[:,4]*y_predicted[:,1] + x[:,5]*(y_predicted[:,2] - g))
 
 
 @tf.function
 def MeanAugmentedLagrangian(x, y_true, y_predicted, mu):
 
     # L = MSE(y_true, y_predicted) - multiplier*(MeanVdot_negative(x, y_predicted) - slack) + (1/(2*mu))*(MeanVdot_negative(x, y_predicted) - slack)**2
-    L = MSE(y_true, y_predicted) - multiplier*(MaxVdot_negative(x, y_predicted) - slack) + (1/(2*mu))*(MaxVdot_negative(x, y_predicted) - slack)**2
+    L = MSE(y_true, y_predicted) + multiplier*(MaxVdot_negative(x, y_predicted) + slack) + (1/(2*mu))*(MaxVdot_negative(x, y_predicted) + slack)**2
 
     return L
 
@@ -93,7 +93,7 @@ def test_step(x, y):
     # Update val metrics
     val_loss = MeanAugmentedLagrangian(x, y, val_y_pred,mu)
     val_acc_metric.update_state(y, val_y_pred)
-    val_max_vdot = -MaxVdot_negative(x_batch_val, val_y_pred)
+    val_max_vdot = MaxVdot_negative(x_batch_val, val_y_pred)
 
 
     return val_loss, val_max_vdot
@@ -208,11 +208,11 @@ val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 val_dataset = val_dataset.batch(batch_size)
 
 # Lagrange multiplier
-multiplier = [tf.Variable(10.0, dtype=tf.float64)]
+multiplier = [tf.Variable(100.0, dtype=tf.float64)]
 slack = [tf.Variable(0.0001, dtype=tf.float64)]
 etabar = 0.1
 omegabar = 0.1
-mubar = 1.0
+mubar = 0.2
 tau = 0.1
 gammabar = 0.1
 alphaomega = 0.1
