@@ -15,66 +15,37 @@ print("Loading mat file")
 base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-# saveflag = 'customANN2'
-# saveflag = 'fullmin_max'
-# saveflag = 'fullmin_max1step'
-saveflag = 'fullmin_max1step_25episodes'
+saveflag = 'minP_'
 
 
 Xfull = matfile['Xfull_2']
 tfull = matfile['tfull_2']
-X_train = matfile['Xtrain2'].reshape(-1,6)
+X_test = matfile['Xtrain2'].reshape(-1,6)
 t_train = matfile['ttrain2']
 X_test = matfile['Xtest2'].reshape(-1,6)
 t_test = matfile['ttest2']
 
 
-print('Loading Policy')
-# filename = base_data_folder+formulation+'NetworkTraining/ANN2_703_tanh_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/ANN2_703_relu_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/fullmin_max_ANN2_703_tanh_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_ANN2_703_tanh_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_20episodesANN2_703_tanh_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_25episodesANN2_703_tanh_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/fullmin_max1step_40episodesANN2_703_tanh_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/lancelot_100episodesANN2_703_tanh_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/regloss_w1_ANN2_703_tanh_n100.h5'
-# filename = base_data_folder+formulation+'NetworkTraining/regloss_w10_adam_ANN2_703_tanh_n100.h5'
-filename = base_data_folder+formulation+'NetworkTraining/sangelli_ANN2_703_tanh_n100.h5'
-policy = models.load_model(filename)
+matfile = loadmat('matlab_matrix.mat')
+A = matfile['A']
+print(A)
 
 nState    =   6
 nCtrl     =   3
 
 g = 9.81
 
-p_x  = 10
-p_y  = 10
-p_z  = 0.1
-p_vx = 1
-p_vy = 1
-p_vz = 0.1
 
-# p_x  = 1
-# p_y  = 1
-# p_z  = 1
-# p_vx = 1
-# p_vy = 1
-# p_vz = 1
 
-# X_test = X_test[:10000,:]
 X_test = X_test[:1000000,:]
 t_test = t_test[:1000000,:]
-# X_test[:,2] = np.sign(X_test[:,2])*X_test[:,2]
+
 nTest = X_test.shape[0]
 Vdot = np.zeros(nTest)
+
 print('nTest: {}'.format(nTest))
 
-# y_predicted = policy.predict(X_test)
-# y_predicted[:,0] = np.clip(y_predicted[:,0], -20, 20)
-# y_predicted[:,1] = np.clip(y_predicted[:,1], -20, 20)
-# y_predicted[:,2] = np.clip(y_predicted[:,2],   0, 20)
+
 
 print('Predicted!')
 
@@ -83,14 +54,9 @@ for i in range(nTest):
     if i % 10000 == 0:
         print('step {} of {}'.format(i,nTest))
 
-    # y_predicted = policy.predict(X_test[i].reshape(1,-1))
-    # Vdot[i] = X_test[i,0]*X_test[i,3] + X_test[i,1]*X_test[i,4] + X_test[i,2]*X_test[i,5] + X_test[i,3]*y_predicted[i,0] + X_test[i,4]*y_predicted[i,1] + X_test[i,5]*(y_predicted[i,2] - g)
-    # Vdot[i] = p_x*X_test[i,0]*X_test[i,3] + p_y*X_test[i,1]*X_test[i,4] + p_z*X_test[i,2]*X_test[i,5] + p_vx*X_test[i,3]*y_predicted[i,0] + p_vy*X_test[i,4]*y_predicted[i,1] + p_vz*X_test[i,5]*(y_predicted[i,2] - g)
-    Vdot[i] = p_x*X_test[i,0]*X_test[i,3] + p_y*X_test[i,1]*X_test[i,4] + p_z*X_test[i,2]*X_test[i,5] + p_vx*X_test[i,3]*t_test[i,0] + p_vy*X_test[i,4]*t_test[i,1] + p_vz*X_test[i,5]*(t_test[i,2] - g)
-    # f_xu = LD.LanderEOM(1.0, X_test[i,:], policy)
+    xdot = np.array([X_test[i,3], X_test[i,4], X_test[i,5], t_test[i,0], t_test[i,1], t_test[i,2]-g])
 
-    # Vdot[i] = p_x*X_test[i,0]*f_xu[0] + p_y*X_test[i,1]*f_xu[1] + p_z*X_test[i,2]*f_xu[2] + p_vx*X_test[i,3]*f_xu[3] + p_vy*X_test[i,4]*f_xu[4] + p_vz*X_test[i,5]*f_xu[5]
-
+    Vdot[i] = X_test[i,:].T @ A.T @ A @ xdot
 
 negative_idx = np.argwhere(Vdot <= 0)
 positive_idx = np.argwhere(Vdot > 0)

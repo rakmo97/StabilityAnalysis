@@ -9,11 +9,10 @@ Created on Mon Jun  1 14:22:37 2020
 # ==================================
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers
 from tensorflow.keras.losses import Loss
 import numpy as np
 import time
-import LyapunovNetwork as LN
 
 from sklearn.model_selection import train_test_split
 from scipy.io import loadmat
@@ -36,29 +35,18 @@ def MeanVdot_negative(x, y_predicted):
 
     return -tf.reduce_mean(x[:,0]*x[:,3] + x[:,1]*x[:,4] + x[:,2]*x[:,5] + x[:,3]*y_predicted[:,0] + x[:,4]*y_predicted[:,1] + x[:,5]*(y_predicted[:,2] - g))
 
-# @tf.function
+@tf.function
 def MaxVdot(x, y_predicted):
 
     g = tf.constant(9.81, dtype=tf.float64)
 
     x = tf.cast(x, dtype=tf.float64)   
     y_predicted = tf.cast(y_predicted, dtype=tf.float64)   
-    xdot = np.array([x[:,3], x[:,4], x[:,5], y_predicted[:,0], y_predicted[:,1], y_predicted[:,2]-g]).T
-    xdot = tf.constant(xdot, dtype=tf.float64)
-    
-    with tf.GradientTape() as tape_phi:
-        tape_phi.watch(x)
-        V_pred = V_phi(x)
 
-    dVdx = tape_phi.gradient(V_pred, x)
-    dVdx = tf.reshape(dVdx, (-1,6))
+    return tf.reduce_max(x[:,0]*x[:,3] + x[:,1]*x[:,4] + x[:,2]*x[:,5] + x[:,3]*y_predicted[:,0] + x[:,4]*y_predicted[:,1] + x[:,5]*(y_predicted[:,2] - g))
 
 
-    Vdot = tf.einsum('ij, ij->i', dVdx, xdot)
-    return tf.reduce_max(Vdot)
-
-
-# @tf.function
+@tf.function
 def RegularizedLoss(x, y_true, y_predicted, w):
 
     L = MSE(y_true, y_predicted) + w*(MaxVdot(x, y_predicted))
@@ -68,7 +56,7 @@ def RegularizedLoss(x, y_true, y_predicted, w):
 
 
 
-# @tf.function
+@tf.function
 def min_step(x, y):
     
     # Gradient tape for autodiff
@@ -94,7 +82,7 @@ def min_step(x, y):
     return train_loss, train_MSE, train_max_vdot
 
 
-# @tf.function
+@tf.function
 def test_step(x, y):
     val_y_pred = TF(x, training=False)
     # Update val metrics
@@ -141,21 +129,17 @@ activation = "tanh"
 n_neurons = 100
 
 
-# # Define policy ANN Architecture
-# inputs = keras.Input(shape=(6,))
-# x1 = layers.Dense(n_neurons, activation=activation, kernel_initializer='normal')(inputs)
-# x2 = layers.Dense(n_neurons, activation=activation, kernel_initializer='normal')(x1)
-# outputs = layers.Dense(3,  activation='linear')(x2)
-# TF = keras.Model(inputs=inputs, outputs=outputs)
-filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
-TF = models.load_model(filename)
-print("Network: {}".format(TF.summary()))
+# # Define ANN Architecture
+inputs = keras.Input(shape=(6,))
+x1 = layers.Dense(n_neurons, activation=activation, kernel_initializer='normal')(inputs)
+x2 = layers.Dense(n_neurons, activation=activation, kernel_initializer='normal')(x1)
+outputs = layers.Dense(3,  activation='linear')(x2)
 
-# Load in trained Lyapunov Network
-saveout_filename = base_data_folder + formulation + "NetworkTraining/MinimizedLyapunovNetwork_MSE_LyBasic_Max.h5"
-V_phi = models.load_model(saveout_filename,  custom_objects={'LyapunovDense': LN.LyapunovDense})
-test_V_phi = V_phi.predict(np.array([[1,1,1,1,1,1]]))
-print('test_V_phi: {}'.format(test_V_phi))
+
+TF = keras.Model(inputs=inputs, outputs=outputs)
+
+
+print("Network: {}".format(TF.summary()))
 
 # ==================================
 # Training Settings
@@ -206,7 +190,7 @@ val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 val_dataset = val_dataset.batch(batch_size)
 
 # Regularization
-w = 1.0
+w = 5.0
 
 
 wait = 0

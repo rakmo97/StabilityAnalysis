@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 print("Loading mat file")
 # base_data_folder = 'E:/Research_Data/3DoF_RigidBody/'
 base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
-formulation = 'pm_3dof/'
+formulation = 'pm_3dof_energy/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
 # matfile = loadmat('ANN2_decoupled_data.mat')
 
@@ -48,7 +48,7 @@ nCtrl     =   3
 
 # Time settings
 t0 = 0
-tf = 10
+tf = 3.7
 nt = 500
 times = np.linspace(t0,tf,nt)
 
@@ -63,9 +63,6 @@ times_ocl = matfile['times_test'][starting_idx:starting_idx+100,:]
 x0 = x_ocl[0,:]
 # x0 = np.array([ 3.03543613,  1.06680528, 14.64393279, -0.11026081, -0.4349514, 0.44100244])
 # x0 = np.array([ 3.01573735,  1.0865911,  14.60939871,  0.89448794, -0.35239689,  0.93383165])
-x0 = np.array([0.29940917, 0.9694248, 0.51511394, 0.64571319, -3.48195239, -4.72167871])
-plot_optimal = False
-
 y_policy = np.zeros([nt,nCtrl])
 x_policy = np.zeros([nt,nState])
 x_policy[0,:] = x0
@@ -119,7 +116,7 @@ savemat("matlab_matrix.mat", mdic)
 plt.figure()
 ax = plt.axes(projection='3d')
 ax.plot3D(x_policy[:,0],x_policy[:,1],x_policy[:,2])
-ax.plot(x_ocl[:,0],x_ocl[:,1],x_ocl[:,2],'--') if plot_optimal else print('')
+ax.plot(x_ocl[:,0],x_ocl[:,1],x_ocl[:,2],'--')
 ax.set_xlabel('X [m]')
 ax.set_ylabel('Y [m]')
 ax.set_zlabel('Z [m]')
@@ -129,21 +126,21 @@ plt.savefig('ann_traj.png')
 plt.figure()
 plt.subplot(221)
 plt.plot(times,x_policy[:,0])
-plt.plot(times_ocl,x_ocl[:,0],'--') if plot_optimal else print('')
+plt.plot(times_ocl,x_ocl[:,0],'--')
 plt.xlabel('Time [s]')
 plt.ylabel('X [m]')
 plt.legend(['Policy','Optimal'])
 
 plt.subplot(222)
 plt.plot(times,x_policy[:,1])
-plt.plot(times_ocl,x_ocl[:,1],'--') if plot_optimal else print('')
+plt.plot(times_ocl,x_ocl[:,1],'--')
 plt.xlabel('Time [s]')
 plt.ylabel('Y [m]')
 plt.legend(['Policy','Optimal'])
 
 plt.subplot(223)
 plt.plot(times,x_policy[:,2])
-plt.plot(times_ocl,x_ocl[:,2],'--') if plot_optimal else print('')
+plt.plot(times_ocl,x_ocl[:,2],'--')
 plt.xlabel('Time [s]')
 plt.ylabel('Z [m]')
 plt.legend(['Policy','Optimal'])
@@ -155,21 +152,21 @@ plt.savefig('ann_pos.png')
 plt.figure()
 plt.subplot(221)
 plt.plot(times,x_policy[:,3])
-plt.plot(times_ocl,x_ocl[:,3],'--') if plot_optimal else print('')
+plt.plot(times_ocl,x_ocl[:,3],'--')
 plt.xlabel('Time [s]')
 plt.ylabel('Xdot [m/s]')
 plt.legend(['Policy','Optimal'])
 
 plt.subplot(222)
 plt.plot(times,x_policy[:,4])
-plt.plot(times_ocl,x_ocl[:,4],'--') if plot_optimal else print('')
+plt.plot(times_ocl,x_ocl[:,4],'--')
 plt.xlabel('Time [s]')
 plt.ylabel('Ydot [m/s]')
 plt.legend(['Policy','Optimal'])
 
 plt.subplot(223)
 plt.plot(times,x_policy[:,5]*180.0/np.pi)
-plt.plot(times_ocl,x_ocl[:,5]*180.0/np.pi,'--') if plot_optimal else print('')
+plt.plot(times_ocl,x_ocl[:,5]*180.0/np.pi,'--')
 plt.xlabel('Time [s]')
 plt.ylabel('Zdot [m/s]')
 plt.legend(['Policy','Optimal'])
@@ -182,21 +179,21 @@ plt.savefig('ann_vel.png')
 plt.figure()
 plt.subplot(221)
 plt.plot(times,y_policy[:,0])
-plt.plot(times_ocl,u_ocl[:,0],'--') if plot_optimal else print('')
+plt.plot(times_ocl,u_ocl[:,0],'--')
 plt.xlabel('Time [s]')
 plt.ylabel('u1 [N]')
 plt.legend(['Policy','Optimal'])
 
 plt.subplot(222)
 plt.plot(times,y_policy[:,1])
-plt.plot(times_ocl,u_ocl[:,1],'--') if plot_optimal else print('')
+plt.plot(times_ocl,u_ocl[:,1],'--')
 plt.xlabel('Time [s]')
 plt.ylabel('u2 [N]')
 plt.legend(['Policy','Optimal'])
 
 plt.subplot(223)
 plt.plot(times,y_policy[:,2])
-plt.plot(times_ocl,u_ocl[:,2],'--') if plot_optimal else print('')
+plt.plot(times_ocl,u_ocl[:,2],'--')
 plt.xlabel('Time [s]')
 plt.ylabel('u3 [N]')
 plt.legend(['Policy','Optimal'])
