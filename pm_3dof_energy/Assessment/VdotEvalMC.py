@@ -14,15 +14,24 @@ from matplotlib import pyplot as plt
 print('Loading Policy')
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
-formulation = 'pm_3dof/'
+formulation = 'pm_3dof_energy/'
 # policy_filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
-policy_filename = base_data_folder+formulation+'NetworkTraining/trainThetaPhi_MCLyapunov_grad__policy.h5'
+# policy_filename = base_data_folder+formulation+'NetworkTraining/trainThetaPhi_MCLyapunov_4break_normal_24nANN2_703_tanh_n100_batch10000.h5'
+# policy_filename = base_data_folder+formulation+'NetworkTraining/trainThetaPhi_4wait_4break_normal_24nANN2_703_tanh_n100_batch10000.h5'
+policy_filename = base_data_folder+formulation+'NetworkTraining/trainThetaPhi_MCLyapunov_4break_normal_24nANN2_703_tanh_n100_batch10000.h5'
 
 policy = models.load_model(policy_filename)
 
 
 # Load Lyapunov Network
-lyapunov_filename = base_data_folder + formulation + "NetworkTraining/trainThetaPhi_MCLyapunov_grad__Lyapunov.h5"
+# lyapunov_filename = base_data_folder + formulation + "NetworkTraining/LyapunovNetwork_120n.h5"
+# lyapunov_filename = base_data_folder + formulation + "NetworkTraining/LyapunovNetwork_24n.h5"
+# lyapunov_filename = base_data_folder + formulation + "NetworkTraining/AggregateLearningMC_LyapunovNetwork_Agg_uniform.h5"
+# lyapunov_filename = base_data_folder + formulation + "NetworkTraining/AggregateLearningMC_LyapunovNetwork_Agg_normal.h5"
+# lyapunov_filename = base_data_folder + formulation + "NetworkTraining/LyapunovNetwork_Agg_uniform_24n.h5"
+# lyapunov_filename = base_data_folder + formulation + "NetworkTraining/trainThetaPhi_MCLyapunov_4break_normal_24n_batch10000_Lyapunov.h5"
+# lyapunov_filename = base_data_folder + formulation + "NetworkTraining/trainThetaPhi_4wait_4break_normal_24n_batch10000_Lyapunov.h5"
+lyapunov_filename = base_data_folder + formulation + "NetworkTraining/trainThetaPhi_MCLyapunov_4break_normal_24n_batch10000_Lyapunov.h5"
 
 V_phi = models.load_model(lyapunov_filename,  custom_objects={'LyapunovDense': LN.LyapunovDense})
 test_V_phi = V_phi.predict(np.array([[1,1,1,1,1,1]]))

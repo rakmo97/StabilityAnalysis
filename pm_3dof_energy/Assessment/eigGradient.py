@@ -16,13 +16,13 @@ from scipy.io import loadmat
 print('Loading Policy')
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
-formulation = 'pm_3dof/'
-policy_filename = base_data_folder+formulation+'NetworkTraining/trainThetaPhi_MCLyapunov_ANN2_703_tanh_n250.h5'
+formulation = 'pm_3dof_energy/'
+policy_filename = base_data_folder+formulation+'NetworkTraining/trainThetaPhi_4wait_4break_normal_24nANN2_703_tanh_n100_batch10000.h5'
 
 policy = models.load_model(policy_filename)
 
 
-lyapunov_filename = base_data_folder + formulation + "NetworkTraining/trainThetaPhi_MCLyapunov__Lyappunov.h5"
+lyapunov_filename = base_data_folder + formulation + "NetworkTraining/trainThetaPhi_4wait_4break_normal_24n_batch10000_Lyapunov.h5"
 
 # Create an instance of the model
 V_phi = models.load_model(lyapunov_filename,  custom_objects={'LyapunovDense': LN.LyapunovDense})

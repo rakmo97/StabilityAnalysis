@@ -15,21 +15,22 @@ print('Loading Policy')
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 formulation = 'pm_3dof/'
-# policy_filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
-policy_filename = base_data_folder+formulation+'NetworkTraining/trainThetaPhi_MCLyapunov_grad__policy.h5'
+# # policy_filename = base_data_folder+formulation+'NetworkTraining/customANN2_703_tanh_n100.h5'
+# policy_filename = base_data_folder+formulation+'NetworkTraining/trainThetaPhi_MCLyapunov_grad__policy.h5'
 
-policy = models.load_model(policy_filename)
+# policy = models.load_model(policy_filename)
+policy = lambda x : tf.constant([[20.,20.,20.]]*x.shape[0])
 
 
 # Load Lyapunov Network
-lyapunov_filename = base_data_folder + formulation + "NetworkTraining/trainThetaPhi_MCLyapunov_grad__Lyapunov.h5"
+lyapunov_filename = base_data_folder + formulation + "NetworkTraining/AggregateLearningMC_Aggregate_Learning_Unstable.h5"
 
 V_phi = models.load_model(lyapunov_filename,  custom_objects={'LyapunovDense': LN.LyapunovDense})
-test_V_phi = V_phi.predict(np.array([[1,1,1,1,1,1]]))
+test_V_phi = V_phi(np.array([[1,1,1,1,1,1]])).numpy()
 print('test_V_phi: {}'.format(test_V_phi))
 
 
-saveflag = 'MC_eval_100n'
+saveflag = 'MC_eval_Unstable'
 
 nState    =   6
 nCtrl     =   3

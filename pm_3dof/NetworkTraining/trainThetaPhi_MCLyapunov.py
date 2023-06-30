@@ -116,7 +116,7 @@ base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'trainThetaPhi_MCLyapunov_10break_normal_'
+saveflag = 'trainThetaPhi_MCLyapunov_5break_normal_'
 print('\nRUNNING PROGRAM USING SAVE FLAG     {}\n'.format(saveflag))
 
 Xfull = matfile['Xfull_2']
@@ -170,11 +170,6 @@ print('test_V_phi: {}'.format(test_V_phi))
 # Training Settings
 # ==================================
 
-# Instantiate an optimizer.
-opt_theta = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=True)
-opt_phi   = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=True)
-
-
 # Batch/early stopping parameters
 batch_size=10000
 epochs_min = 10000
@@ -183,7 +178,7 @@ MC_num_train = 100000
 MC_num_val = 1000000
 
 episode_break_condition_counter = 0
-episode_break_condition = 10
+episode_break_condition = 5
 patience = 8
 wait = 0
 best = float('inf')
@@ -242,7 +237,12 @@ for episode in range(episodes):
 
     print("-------------------------------------")
     print("Minimization Loop (Oracle)")
-    
+
+    # (Re-)Instantiate an optimizer.
+    opt_theta = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=True)
+    opt_phi   = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=True)
+
+
     # Reset early stopping iterators
     wait = 0
     best = float('inf')
@@ -324,7 +324,7 @@ for episode in range(episodes):
     print('multiplier: {}'.format(multiplier))
     
     if ( (val_max_vdot<0) and (val_MSE<0.5) ):
-        print("Incrementing episode_break_condition_counter")
+        print("Incrementing episode_break_condition_counter to {}".format(episode_break_condition_counter+1))
         episode_break_condition_counter += 1
     else:
         print("Setting episode_break_condition_counter to zero")

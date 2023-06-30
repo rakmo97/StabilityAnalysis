@@ -72,18 +72,18 @@ def gradVdotOrigin():
         dVdx = t3.gradient(V_pred, x)
         dVdx = tf.reshape(dVdx, (-1,6))
 
-        Vdot = tf.einsum('ij, ij->i', dVdx, xdot)
+        Vdot = tf.einsum('ij, ij->i', dVdx, xdot) # Vdot = dV/dt = (dV/dx)*(dx/dt)
 
 
     grad_Vdot = t2.gradient(Vdot, x)
     
-    return tf.math.reduce_euclidean_norm(grad_Vdot)
+    return grad_Vdot
 
 
 # @tf.function
 def Lagrangian(x, y_true, y_predicted, x_MC, y_MC):
 
-    L = MSE(y_true, y_predicted) + multiplier*MaxVdot(x_MC, y_MC) + multiplier1*gradVdotOrigin()
+    L = MSE(y_true, y_predicted) + multiplier*MaxVdot(x_MC, y_MC) + tf.tensordot(multiplier1,tf.square(tf.reshape(gradVdotOrigin(),[-1])), axes=1)
 
     return L
 
@@ -149,7 +149,7 @@ base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 formulation = 'pm_3dof/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'trainThetaPhi_MCLyapunov_grad_normal'
+saveflag = 'trainThetaPhi_MCLyapunov_fullgrad_normal'
 print('\nRUNNING PROGRAM USING SAVE FLAG     {}\n'.format(saveflag))
 
 Xfull = matfile['Xfull_2']
@@ -265,9 +265,9 @@ val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 val_dataset = val_dataset.batch(x_val.shape[0])
 
 multiplier = 0
-multiplier1 = 0
+multiplier1 = tf.constant([0,0,0,0,0,0], dtype=tf.float64)
 history['multiplier'].append(multiplier)
-history['multiplier1'].append(multiplier1)
+history['multiplier1'].append(multiplier1.numpy().tolist())
 
 for episode in range(episodes):
 
@@ -353,8 +353,8 @@ for episode in range(episodes):
     multiplier = max(0,multiplier) # Enforces multiplier >= 0
     history['multiplier'].append(multiplier)
 
-    multiplier1 += val_grad_vdot_origin
-    history['multiplier1'].append(multiplier1)
+    multiplier1 += 0.01*val_grad_vdot_origin
+    history['multiplier1'].append(multiplier1.numpy().tolist())
 
     
 

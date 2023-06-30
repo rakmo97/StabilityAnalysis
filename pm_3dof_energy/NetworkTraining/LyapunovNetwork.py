@@ -28,6 +28,15 @@ class LyapunovDense(Layer):
         elif self.num_outputs < int(input_shape[-1]):
             print('WARNING: out_features > in_features')
         
+    def get_config(self):
+        return {"num_outputs": self.num_outputs}
+
+    # def get_config(self):
+    #     if self.G2exist:
+    #         return {'G1': self.G1, 'G2': self.G2}
+    #     else:
+    #         return {'G1': self.G1}
+    
     def call(self, x):
        
         top_part = tf.transpose(self.G1)@self.G1 + self.epsilon*tf.eye(self.G1.shape[1])
@@ -41,6 +50,8 @@ class LyapunovDense(Layer):
             y = tf.matmul(x,tf.transpose(top_part))
 
         return tf.nn.tanh(y)   
+        # return tf.nn.selu(y)   
+
 
 
 class LyapunovNetwork(Model):

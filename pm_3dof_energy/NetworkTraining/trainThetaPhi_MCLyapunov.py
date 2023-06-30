@@ -48,42 +48,11 @@ def MaxVdot(x, u):
     Vdot = tf.einsum('ij, ij->i', dVdx, xdot)
     return tf.reduce_max(Vdot)
 
-# @tf.function
-def gradVdotOrigin():
-    
-    x = tf.constant([[0,0,0,0,0,0]], dtype=tf.float64)
-    g = tf.constant(9.81, dtype=tf.float64)
-
-    with tf.GradientTape() as t2: # To calculate dVdot/dx (Gradient of Vdot)
-        t2.watch(x)
-        
-        u = TF(x)
-        u = tf.clip_by_value(u, (-20,-20,0),(20,20,20))
-        u = tf.cast(u, dtype=tf.float64)   
-
-        xdot = np.array([x[:,3], x[:,4], x[:,5], u[:,0], u[:,1], u[:,2]-g]).T
-        xdot = tf.constant(xdot, dtype=tf.float64)
-        
-        # Calculate Vdot
-        with tf.GradientTape() as t3: # To calculate dV/dx (Gradient of V)
-            t3.watch(x)
-            V_pred = V_phi(x)
-
-        dVdx = t3.gradient(V_pred, x)
-        dVdx = tf.reshape(dVdx, (-1,6))
-
-        Vdot = tf.einsum('ij, ij->i', dVdx, xdot)
-
-
-    grad_Vdot = t2.gradient(Vdot, x)
-    
-    return tf.math.reduce_euclidean_norm(grad_Vdot)
-
 
 # @tf.function
 def Lagrangian(x, y_true, y_predicted, x_MC, y_MC):
 
-    L = MSE(y_true, y_predicted) + multiplier*MaxVdot(x_MC, y_MC) + multiplier1*gradVdotOrigin()
+    L = MSE(y_true, y_predicted) + multiplier*MaxVdot(x_MC, y_MC)
 
     return L
 
@@ -119,10 +88,9 @@ def min_step(x_batch, y_true, x_MC):
     # Update training metric.
     train_MSE = MSE(y_true, y_pred_batch)
     train_max_vdot = MaxVdot(x_MC, y_pred_MC)
-    train_grad_vdot_origin = gradVdotOrigin()
 
 
-    return train_loss, train_MSE, train_max_vdot, train_grad_vdot_origin
+    return train_loss, train_MSE, train_max_vdot
 
 
 # @tf.function
@@ -135,10 +103,9 @@ def test_step(x, y, x_MC):
     val_MSE = MSE(y, val_y_pred)
 
     val_max_vdot = MaxVdot(x_MC, val_y_pred_MC)
-    val_grad_vdot_origin = gradVdotOrigin()
 
 
-    return val_loss, val_MSE, val_max_vdot, val_grad_vdot_origin
+    return val_loss, val_MSE, val_max_vdot
 
 # ==================================
 # Load Data
@@ -147,9 +114,9 @@ def test_step(x, y, x_MC):
 print("Loading mat file")
 base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
-formulation = 'pm_3dof/'
+formulation = 'pm_3dof_energy/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
-saveflag = 'trainThetaPhi_MCLyapunov_grad_normal'
+saveflag = 'trainThetaPhi_4wait_4break_normal_24n'
 print('\nRUNNING PROGRAM USING SAVE FLAG     {}\n'.format(saveflag))
 
 Xfull = matfile['Xfull_2']
@@ -161,23 +128,16 @@ t_test = matfile['ttest2']
 
 print("Full training size: {}".format(X_train.shape[0]))
 
-# Xfull = matfile['Xfull_2'].reshape(-1,7)
-# tfull = matfile['tfull_2'][:,2].reshape(-1,1)
-# X_train = matfile['Xtrain2'].reshape(-1,7)
-# t_train = matfile['ttrain2'][:,2].reshape(-1,1)
-# X_test = matfile['Xtest2'].reshape(-1,7)
-# t_test = matfile['ttest2'][:,2].reshape(-1,1)
+
 
 
 # ==================================
 # Build Networks
 # ==================================
     
-# activation = "relu"
 activation = "tanh"
-#
-# n_neurons = 2000
-# n_neurons = 250
+
+
 n_neurons = 100
 
 
@@ -193,7 +153,7 @@ TF = models.load_model(policy_filename)
 print("Policy Network: {}".format(TF.summary()))
 
 # Load in trained Lyapunov Network
-lyapunov_filename = base_data_folder + formulation + "NetworkTraining/MinimizedLyapunovNetwork_MSE_LyBasic_Max.h5"
+lyapunov_filename = base_data_folder + formulation + "NetworkTraining/LyapunovNetwork_Agg_uniform_24n.h5"
 V_phi = models.load_model(lyapunov_filename,  custom_objects={'LyapunovDense': LN.LyapunovDense})
 test_V_phi = V_phi.predict(np.array([[1,1,1,1,1,1]]))
 print('test_V_phi: {}'.format(test_V_phi))
@@ -203,22 +163,20 @@ print('test_V_phi: {}'.format(test_V_phi))
 # Training Settings
 # ==================================
 
-# Instantiate an optimizer.
-opt_theta = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=True)
-opt_phi   = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=True)
-
 
 # Batch/early stopping parameters
-batch_size=1000
-epochs_min = 1000
+batch_size=10000
+epochs_min = 10000
 episodes = 100
-MC_num_train = 10000
-MC_num_val = 100000
+MC_num_train = 100000
+MC_num_val = 1000000
 
 episode_break_condition_counter = 0
 episode_break_condition = 4
-patience = 8
+patience = 4
+patience2 = 4
 wait = 0
+wait2 = 0
 best = float('inf')
 val_MSE_last = float('inf')
 
@@ -237,9 +195,9 @@ upper = [ 5,  5,  20,  5,  5,  5]
 # Training Loop
 # ==================================
 
-history = {'train_loss': [], 'train_MSE': [], 'train_max_vdot': [], 'train_grad_vdot_origin': [],
-           'val_loss': [], 'val_MSE': [], 'val_max_vdot': [], 'val_grad_vdot_origin': [],
-           'multiplier': [], 'multiplier1': []}
+history = {'train_loss': [], 'train_MSE': [], 'train_max_vdot': [], 
+           'val_loss': [], 'val_MSE': [], 'val_max_vdot': [], 
+           'multiplier': []}
 
 # Reserve 10,000 samples for validation.
 x_val = X_train[-10000:]
@@ -265,9 +223,7 @@ val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 val_dataset = val_dataset.batch(x_val.shape[0])
 
 multiplier = 0
-multiplier1 = 0
 history['multiplier'].append(multiplier)
-history['multiplier1'].append(multiplier1)
 
 for episode in range(episodes):
 
@@ -278,8 +234,14 @@ for episode in range(episodes):
     print("-------------------------------------")
     print("Minimization Loop (Oracle)")
     
+    # (Re-)Instantiate an optimizer.
+    opt_theta = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=True)
+    opt_phi   = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=True)
+
+
     # Reset early stopping iterators
     wait = 0
+    wait2 = 0
     best = float('inf')
 
     # Generate MC states for constraint evaluation
@@ -302,43 +264,44 @@ for episode in range(episodes):
         for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
             
             # Min step function
-            train_loss, train_MSE, train_max_vdot, train_grad_vdot_origin = min_step(x_batch_train, y_batch_train, X_MC_tensor)
+            train_loss, train_MSE, train_max_vdot = min_step(x_batch_train, y_batch_train, X_MC_tensor)
 
         # Display metrics at the end of each epoch.
         history['train_loss'].append(train_loss)
         history['train_MSE'].append(train_MSE)
         history['train_max_vdot'].append(train_max_vdot)
-        history['train_grad_vdot_origin'].append(train_grad_vdot_origin)
+
 
         # Run a validation loop at the end of each epoch.
         for x_batch_val, y_batch_val in val_dataset:
             # TEST STEP FUNCTION
-            val_loss, val_MSE, val_max_vdot, val_grad_vdot_origin = test_step(x_batch_val, y_batch_val, X_MC_tensor_val)
+            val_loss, val_MSE, val_max_vdot = test_step(x_batch_val, y_batch_val, X_MC_tensor_val)
 
 
         history['val_loss'].append(val_loss)
         history['val_MSE'].append(val_MSE)
         history['val_max_vdot'].append(val_max_vdot)
-        history['val_grad_vdot_origin'].append(val_grad_vdot_origin)
 
         # The early stopping strategy: stop the training if `val_loss` does not
         # decrease over a certain number of epochs.
         wait += 1
-        print("--- Epoch {} Summary (Epidsode {}) ---".format(epoch+1, episode+1))
+        print("--- Epoch {} Summary (Epidsode {}) ---".format(epoch, episode))
         print(" train_MSE:               {}".format(train_MSE))
-        print(" train_max_vdot:          {}".format(train_max_vdot))
-        print(" train_grad_vdot_origin:  {}".format(train_grad_vdot_origin))
+        print(" train_max_vdot:        {}".format(train_max_vdot))
         print(" train_loss (lagrangian): {}\n".format(train_loss))
         print(" val_MSE:               {}".format(val_MSE))
-        print(" val_max_vdot:          {}".format(val_max_vdot))
-        print(" val_grad_vdot_origin:  {}".format(val_grad_vdot_origin))
+        print(" val_max_vdot:        {}".format(val_max_vdot))
         print(" val_loss (lagrangian): {}\n".format(val_loss))
         print(" multiplier: {}".format(multiplier))
-        print(" multiplier1: {}".format(multiplier1))
 
         print("Time taken: %.2fs" % (time.time() - start_time))
-        print("best = {}".format(best))
+        # print("best = {}".format(best))
+
+        # Early Stopping Conditions:
+        #    (1) If val_loss doesn't decrease for patience number of epochs
+        #    (2) If the MSE is low and the val_max_vdot is negative for patience2 number of epochs
         print("wait = {}".format(wait))
+        print("wait2 = {}".format(wait2))
         if val_loss < best:
             print("Val loss: {} < best: {}, setting wait to 0".format(val_loss, best))
             best = val_loss
@@ -347,14 +310,21 @@ for episode in range(episodes):
             print("Early Stopping condition met, breaking")
             break
 
+        if ( (val_max_vdot<0) and (val_MSE<0.5) ):
+            print("Incrementing wait to {}".format(wait+1))
+            wait2 += 1
+        else:
+            print("Setting wait to zero")
+            wait2 = 0
+
+        if wait2 >= patience2:
+            print('Training conditions met, breaking.')
+            break
 
     # Calculate gradient wrt lambda, update M matrix
     multiplier += val_max_vdot
     multiplier = max(0,multiplier) # Enforces multiplier >= 0
     history['multiplier'].append(multiplier)
-
-    multiplier1 += val_grad_vdot_origin
-    history['multiplier1'].append(multiplier1)
 
     
 
@@ -364,10 +334,9 @@ for episode in range(episodes):
     print('      EPISODE {} SUMMARY:    '.format(episode+1))
     print('dLdlam: {}'.format(val_max_vdot))
     print('multiplier: {}'.format(multiplier))
-    print('multiplier1: {}'.format(multiplier1))
     
     if ( (val_max_vdot<0) and (val_MSE<0.5) ):
-        print("Incrementing episode_break_condition_counter")
+        print("Incrementing episode_break_condition_counter to {}".format(episode_break_condition_counter+1))
         episode_break_condition_counter += 1
     else:
         print("Setting episode_break_condition_counter to zero")
@@ -424,12 +393,12 @@ plt.savefig('{}nettrain_max_vdot.png'.format(saveflag))
 
 # Save model
 print("\nSaving Policy!")
-saveout_filename = base_data_folder + formulation + "NetworkTraining/{}_policy.h5".format(saveflag,activation,n_neurons)
+saveout_filename = base_data_folder + formulation + "NetworkTraining/{}ANN2_703_{}_n{}_batch{}.h5".format(saveflag,activation,n_neurons, batch_size)
 print('Filename: ' + saveout_filename)
 TF.save(saveout_filename)
 
 print("\nSaving Lyapunov!")
-saveout_filename = base_data_folder + formulation + "NetworkTraining/{}_Lyapunov.h5".format(saveflag)
+saveout_filename = base_data_folder + formulation + "NetworkTraining/{}_batch{}_Lyapunov.h5".format(saveflag, batch_size)
 print('Filename: ' + saveout_filename)
 V_phi.save(saveout_filename)
 

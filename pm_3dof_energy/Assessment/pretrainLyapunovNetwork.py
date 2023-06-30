@@ -27,11 +27,10 @@ g = 9.81
 # ==================================
 activation = "tanh"
 
-nNeurons = 120
+nNeurons = 24
 
 inputs = keras.Input(shape=(6,))
 x = LN.LyapunovDense(nNeurons)(inputs)
-x = LN.LyapunovDense(nNeurons)(x)
 x = LN.LyapunovDense(nNeurons)(x)
 outputs = Dot(axes=1)([x, x])
 
@@ -52,7 +51,7 @@ print('\nRUNNING PROGRAM USING SAVE FLAG     {}\n'.format(saveflag))
 print("Loading mat file")
 # base_data_folder = 'E:/Research_Data/StabilityAnalysis/'
 base_data_folder = '/orange/rcstudents/omkarmulekar/StabilityAnalysis/'
-formulation = 'pm_3dof/'
+formulation = 'pm_3dof_energy/'
 matfile = loadmat(base_data_folder+formulation+'ANN2_data.mat')
 
 
